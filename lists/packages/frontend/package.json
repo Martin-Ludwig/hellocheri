@@ -1,0 +1,12 @@
+{
+  "name": "@lists/frontend",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/index.tsx",
+    "build": "bun build src/index.tsx --outdir dist",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@lists/shared": "workspace:*"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "notes",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

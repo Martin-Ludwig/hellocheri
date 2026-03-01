@@ -1,0 +1,6 @@
+{
+  "name": "@lists/shared",
+  "private": true,
+  "module": "src/index.ts",
+  "types": "src/index.ts"
+}

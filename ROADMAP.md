@@ -4,7 +4,7 @@
 
 - [x] Define monorepo structure and conventions (HEL-5)
 - [ ] Scaffold `notes` project
-- [ ] Scaffold `lists` project
+- [x] Scaffold `lists` project (HEL-6 — lists/frontend initialised with react, react-dom, tailwindcss)
 
 ## Phase 2 — Notes
 

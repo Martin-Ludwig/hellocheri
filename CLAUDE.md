@@ -34,6 +34,10 @@ The repo root also has a `shared/` folder for code shared across multiple projec
 - Write tests for every new function, endpoint, and store logic
 - Tests MUST pass before code is committed
 
+## Docs
+
+Per-package documentation lives in `docs/`. Read the relevant file before working on a package.
+
 ## Documentation
 
 After EVERY code change, check and update these files if needed:

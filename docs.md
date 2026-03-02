@@ -5,6 +5,10 @@
 - [Notes](./notes/README.md) — Notes application
 - [Lists](./lists/README.md) — Lists application
 
+## Framework
+
+- [LocalStorage](./docs/localstorage.md) — LocalStorageManager utility class
+
 ## Conventions
 
 - [CLAUDE.md](./CLAUDE.md) — AI assistant and developer conventions

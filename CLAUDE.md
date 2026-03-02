@@ -26,7 +26,7 @@ Each project follows this workspace layout:
 └── bunfig.toml
 ```
 
-The repo root also has a `shared/` folder for code shared across multiple projects.
+The repo root also has a `framework/` folder for code shared across multiple projects.
 
 ## Testing
 

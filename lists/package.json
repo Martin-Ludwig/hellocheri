@@ -1,0 +1,7 @@
+{
+  "name": "lists",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

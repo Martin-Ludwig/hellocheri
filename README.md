@@ -12,7 +12,7 @@ A monorepo containing multiple projects built with Bun, TypeScript, React, and E
 ## Structure
 
 ```
-├── shared/          # Shared files across all projects
+├── framework/       # Shared utilities and classes across all projects
 ├── notes/           # Notes project
 ├── lists/           # Lists project
 ├── docs.md          # Documentation index

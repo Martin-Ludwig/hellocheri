@@ -5,6 +5,7 @@
 - [x] Define monorepo structure and conventions (HEL-5)
 - [ ] Scaffold `notes` project
 - [x] Scaffold `lists` project (HEL-6 — lists/frontend initialised with react, react-dom, tailwindcss)
+- [x] Rename `shared/` to `framework/`, add LocalStorageManager class with docs and tests (HEL-7)
 
 ## Phase 2 — Notes
 

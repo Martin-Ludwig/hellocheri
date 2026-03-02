@@ -12,3 +12,10 @@ Insights, patterns, and pitfalls discovered during development.
 - Run `bun add` from inside a workspace package dir to add deps to that package's package.json; always follow up with `bun install` at the workspace root
 - Bun stores installed packages in `node_modules/.bun/` using its own internal layout (no traditional per-package symlinks at the root level)
 - Tailwind CSS v4 package is `tailwindcss`; React types are `@types/react` and `@types/react-dom` (both as devDependencies)
+
+## LocalStorageManager (framework/)
+
+- Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`
+- Use `rehydrate: (raw: unknown) => T` to restore non-serializable types (e.g. `Date`) after JSON.parse
+- `enabled: false` is the correct pattern for SSR, testing, and feature-flagged storage
+- All storage operations should be wrapped in try/catch — JSON.parse can throw on corrupt data

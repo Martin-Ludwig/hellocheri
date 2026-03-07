@@ -30,6 +30,8 @@ Share `plan.md` with the user for review. Wait for feedback and incorporate any 
 ### 5. Wait for "go"
 Do NOT begin implementation until the user explicitly approves with a "go".
 
+### 6. Before pull request delete plan.md.
+
 ---
 
 ## Package Manager

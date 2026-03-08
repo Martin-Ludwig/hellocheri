@@ -11,6 +11,7 @@ Always use `bun` over `npm`. Never use `npm`, `npx`, or `yarn`.
 - TypeScript strict mode everywhere
 - Tailwind CSS (Pro) for styling — no additional UI libraries
 - Use English language throughout the entire project (variable names, comments, strings, docs)
+- Prefer readable, self-explanatory names over short aliases — e.g. SQL `FROM lists list` not `FROM lists l`
 
 ## Project Structure
 

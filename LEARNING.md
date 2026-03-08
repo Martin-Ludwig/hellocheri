@@ -13,6 +13,18 @@ Insights, patterns, and pitfalls discovered during development.
 - Bun stores installed packages in `node_modules/.bun/` using its own internal layout (no traditional per-package symlinks at the root level)
 - Tailwind CSS v4 package is `tailwindcss`; React types are `@types/react` and `@types/react-dom` (both as devDependencies)
 
+## SQLite with bun:sqlite (@lists/backend)
+
+- Use `test()` not `it()` — `test()` is the documented API in `bun:test`; `it()` works as an undocumented Jest alias but should be avoided
+- `bun:sqlite` is built-in — no extra dependency needed
+- DB is initialised by running `schema.sql` via `db.exec(readFileSync(...))` on startup
+- Use `INSERT OR IGNORE` for seed data so re-running the schema is safe
+- SQLite has no booleans — use `INTEGER` (0/1); SQLite also has no stored procedures
+- Derived/computed values (e.g. list `completed`) belong in a VIEW, not a stored column — avoids sync bugs with triggers
+- snake_case in DB columns (`list_id`, `created_at`), camelCase in TypeScript (`listId`, `createdAt`) — map at the DB access layer
+- Enum values in TS (`ItemStatus`) mirror the integer primary keys of the lookup table (`item_status`)
+- i18n: store machine-readable codes in DB (`"default"`, `"completed"`), translate to display strings in the frontend
+
 ## LocalStorageManager (framework/)
 
 - Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`

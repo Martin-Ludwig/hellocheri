@@ -2,6 +2,7 @@
   "name": "notes",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "../framework"
   ]
 }

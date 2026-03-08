@@ -7,6 +7,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@framework": "workspace:*",
     "@notes/shared": "workspace:*"
   }
 }

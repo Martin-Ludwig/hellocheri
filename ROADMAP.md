@@ -6,6 +6,7 @@
 - [ ] Scaffold `notes` project
 - [x] Scaffold `lists` project (HEL-6 — lists/frontend initialised with react, react-dom, tailwindcss)
 - [x] Rename `shared/` to `framework/`, add LocalStorageManager class with docs and tests (HEL-7)
+- [x] Add AppTextInput base component to framework with docs and tests (HEL-25)
 
 ## Phase 2 — Notes
 

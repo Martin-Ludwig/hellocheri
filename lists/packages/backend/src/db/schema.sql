@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS list_items (
 
 CREATE INDEX IF NOT EXISTS idx_list_items_list_id ON list_items(list_id);
 
--- View: completed is computed, not stored — always consistent
+-- View: completed is derived by select statement on the fly.
 CREATE VIEW IF NOT EXISTS lists_with_status AS
 SELECT
   list.*,

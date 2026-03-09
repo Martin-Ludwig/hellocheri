@@ -15,7 +15,7 @@ Lookup table for list item statuses. Pre-seeded, not user-editable.
 | Column | Type    | Description                        |
 |--------|---------|------------------------------------|
 | `id`   | INTEGER | Primary key                        |
-| `name` | TEXT    | Machine-readable code (not a display label — translate in frontend) |
+| `name` | TEXT    | Label key for i18n dictionaries                                     |
 
 Seed values:
 
@@ -38,9 +38,9 @@ Seed values:
 | Column       | Type    | Description                              |
 |--------------|---------|------------------------------------------|
 | `id`         | TEXT    | UUID v4, primary key                     |
-| `list_id`    | TEXT    | Foreign key → `lists.id` (CASCADE delete) |
+| `list_id`    | TEXT    | Foreign key, references `lists.id` (CASCADE delete) |
 | `text`       | TEXT    | Item content                             |
-| `status`     | INTEGER | Foreign key → `item_status.id`           |
+| `status`     | INTEGER | Foreign key, references `item_status.id` |
 | `position` | INTEGER | Position within list                     |
 | `created_at` | TEXT    | ISO-8601 timestamp                       |
 | `updated_at` | TEXT    | ISO-8601 timestamp                       |
@@ -52,7 +52,7 @@ Index: `idx_list_items_list_id` on `list_items(list_id)`.
 `completed` on a list is derived (are all items completed?). Storing it would
 create a sync problem: adding a new item would require resetting the flag manually.
 
-The view computes it on-the-fly — always consistent, no triggers needed.
+The view computes it on the fly, without triggers.
 
 ```sql
 CREATE VIEW IF NOT EXISTS lists_with_status AS
@@ -67,8 +67,6 @@ FROM lists list
 LEFT JOIN list_items item ON item.list_id = list.id
 GROUP BY list.id;
 ```
-
-Query `lists_with_status` instead of `lists` whenever `completed` is needed.
 
 ## TypeScript Types
 
@@ -110,5 +108,4 @@ const input = new UpdateListInput("Groceries (week 2)");
 
 ## i18n
 
-`item_status.name` values are machine-readable codes (`"default"`, `"completed"`),
-not display strings. The frontend maps these codes to translated labels.
+`item_status.name` values are label-keys (`"default"`, `"completed"`) for language dictionaries to map the key to the specific language label.

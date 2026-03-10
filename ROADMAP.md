@@ -18,4 +18,4 @@
 
 - [ ] Lists backend (Elysia REST API)
 - [ ] Lists frontend (React)
-- [ ] Lists shared types
+- [x] Lists shared types + DB schema (HEL-8)

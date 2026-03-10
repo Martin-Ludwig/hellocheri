@@ -67,6 +67,8 @@ The repo root also has a `framework/` folder for code shared across multiple pro
 - Test runner: `bun test`
 - Write tests for every new function, endpoint, and store logic
 - Tests MUST pass before code is committed
+- Use `test()` — not `it()`. Bun's docs only document `test()`
+- Import from `bun:test`: `import { describe, test, expect } from "bun:test"`
 
 ## Documentation
 

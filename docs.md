@@ -8,6 +8,7 @@
 ## Framework
 
 - [LocalStorage](./docs/localstorage.md) — LocalStorageManager utility class
+- [AppTextInput](./docs/textinput.md) — Base text input React component
 
 ## Conventions
 

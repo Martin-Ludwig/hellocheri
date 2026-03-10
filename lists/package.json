@@ -2,6 +2,7 @@
   "name": "lists",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "../framework"
   ]
 }

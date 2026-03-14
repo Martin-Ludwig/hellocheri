@@ -58,10 +58,23 @@ describe("ListIndexPage", () => {
     });
   });
 
-  test("opens create modal when New List is clicked", async () => {
+  test("creates a list with default name when New List is clicked", async () => {
+    const calls: Request[] = [];
+    globalThis.fetch = mock(async (input: RequestInfo) => {
+      const req = new Request(input instanceof Request ? input.url : input);
+      calls.push(req);
+      return new Response(
+        JSON.stringify({ id: "1", name: "New List", createdAt: "", updatedAt: "" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
     render(<ListIndexPage />);
     await waitFor(() => screen.getByRole("button", { name: "New List" }));
     fireEvent.click(screen.getByRole("button", { name: "New List" }));
-    expect(screen.getByRole("dialog")).toBeDefined();
+
+    await waitFor(() => {
+      expect(calls.length).toBeGreaterThanOrEqual(2);
+    });
   });
 });

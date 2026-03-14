@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ListWithStatus } from "@lists/shared";
 import { ListCard } from "@frontend/components/ListCard";
-import { CreateListModal } from "@frontend/components/CreateListModal";
 
 const API_BASE = "http://localhost:3001";
+const DEFAULT_LIST_NAME = "New List";
 
 type FetchState =
   | { status: "loading" }
@@ -12,7 +12,7 @@ type FetchState =
 
 export function ListIndexPage() {
   const [fetchState, setFetchState] = useState<FetchState>({ status: "loading" });
-  const [showModal, setShowModal] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const loadLists = useCallback(async () => {
     setFetchState({ status: "loading" });
@@ -49,9 +49,18 @@ export function ListIndexPage() {
     void loadLists();
   }, [loadLists]);
 
-  function handleCreated() {
-    setShowModal(false);
-    void loadLists();
+  async function handleNewList() {
+    setCreating(true);
+    try {
+      await fetch(`${API_BASE}/lists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: DEFAULT_LIST_NAME }),
+      });
+      void loadLists();
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
@@ -60,8 +69,9 @@ export function ListIndexPage() {
         <h1 className="text-2xl font-bold text-gray-900">My Lists</h1>
         <button
           type="button"
-          onClick={() => setShowModal(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          onClick={() => void handleNewList()}
+          disabled={creating}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           New List
         </button>
@@ -89,13 +99,6 @@ export function ListIndexPage() {
             </li>
           ))}
         </ul>
-      )}
-
-      {showModal && (
-        <CreateListModal
-          onCreated={handleCreated}
-          onClose={() => setShowModal(false)}
-        />
       )}
     </div>
   );

@@ -104,6 +104,9 @@ is explicitly required.
 - Explicit over implicit — spell things out even if it means more lines
 - If in doubt, write the boring solution
 
+- Avoid em-dashes, arrow characters (->), and emojis in any written content (docs, comments, strings)
+- Always use `@` path aliases instead of relative imports (e.g. `@backend/db/index` not `./db/index`, `@frontend/components/ListCard` not `../components/ListCard`)
+  - Each package has its own alias defined in its `tsconfig.json` `paths` field: `@backend/*` → `./src/*`, `@frontend/*` → `./src/*`
 
 ## Project Structure
 

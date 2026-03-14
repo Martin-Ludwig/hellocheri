@@ -16,6 +16,6 @@
 
 ## Phase 3 — Lists
 
-- [ ] Lists backend (Elysia REST API)
-- [ ] Lists frontend (React)
+- [x] Lists backend (Elysia REST API) — GET /lists, POST /lists (HEL-69)
+- [x] Lists frontend (React) — index page with list overview and create modal (HEL-69)
 - [x] Lists shared types + DB schema (HEL-8)

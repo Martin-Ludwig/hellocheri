@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import { db } from "./db/index";
+import { db } from "@backend/db/index";
 import app from "./index";
 
 beforeEach(() => {

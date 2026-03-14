@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { db } from "./db/index";
+import { db } from "@backend/db/index";
 
 const listShape = t.Object({
   id: t.String(),

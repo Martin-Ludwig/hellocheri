@@ -31,6 +31,7 @@ Insights, patterns, and pitfalls discovered during development.
 - SQLite has no booleans — use `INTEGER` (0/1); SQLite also has no stored procedures
 - Derived/computed values (e.g. list `completed`) belong in a VIEW, not a stored column — avoids sync bugs with triggers
 - snake_case in DB columns (`list_id`, `created_at`), camelCase in TypeScript (`listId`, `createdAt`) — map at the DB access layer
+- Define named row types (e.g. `ListWithStatusRow`, `ListItemRow`) in `@<project>/shared` and import them in the backend — avoids repeating inline anonymous types in every `db.query<{...}, [...]>()` call
 - Enum values in TS (`ItemStatus`) mirror the integer primary keys of the lookup table (`item_status`)
 - i18n: store machine-readable codes in DB (`"default"`, `"completed"`), translate to display strings in the frontend
 
@@ -42,6 +43,7 @@ Insights, patterns, and pitfalls discovered during development.
 - Without `afterEach(cleanup)`, rendered components accumulate across tests in the same file, causing "Found multiple elements" errors
 - Elysia does not automatically serialize class instances as JSON — return plain object literals from handlers and define TypeBox `response` schemas explicitly so Elysia sets the correct Content-Type and validates output
 - `app.handle(new Request(...))` is the idiomatic way to test Elysia endpoints without starting a real HTTP server
+- To return a 404 from an Elysia handler, use `set.status = 404; return { error: "..." }` — do NOT use the `error()` context helper with a typed `response` map, as it causes a 500 instead
 
 ## LocalStorageManager (framework/)
 

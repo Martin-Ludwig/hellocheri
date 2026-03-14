@@ -19,3 +19,5 @@
 - [x] Lists backend (Elysia REST API) — GET /lists, POST /lists (HEL-69)
 - [x] Lists frontend (React) — index page with list overview and create modal (HEL-69)
 - [x] Lists shared types + DB schema (HEL-8)
+- [x] Lists backend — item endpoints: GET /lists/:id, GET /lists/:id/items, PATCH /lists/:id/items/:itemId, DELETE /lists/:id/items/:itemId (HEL-70)
+- [ ] Lists frontend — detail page with items, check off, delete (HEL-71)

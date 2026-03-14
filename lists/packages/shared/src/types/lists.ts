@@ -42,6 +42,28 @@ export class ListItem {
   }
 }
 
+// Raw SQLite row shapes — snake_case mirrors column names from the DB/views
+export type ListRow = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ListWithStatusRow = ListRow & {
+  completed: number;
+};
+
+export type ListItemRow = {
+  id: string;
+  list_id: string;
+  text: string;
+  status: number;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export class CreateListInput {
   constructor(public readonly name: string) {}
 }

@@ -45,6 +45,8 @@ Always use `bun` over `npm`. Never use `npm`, `npx`, or `yarn`.
 - Use English language throughout the entire project (variable names, comments, strings, docs)
 - Prefer readable, self-explanatory names over short aliases (e.g. SQL `FROM lists list` not `FROM lists l`)
 - Avoid em-dashes, arrow characters (->), and emojis in any written content (docs, comments, strings)
+- Always use `@` path aliases instead of relative imports (e.g. `@backend/db/index` not `./db/index`, `@frontend/components/ListCard` not `../components/ListCard`)
+  - Each package has its own alias defined in its `tsconfig.json` `paths` field: `@backend/*` → `./src/*`, `@frontend/*` → `./src/*`
 
 ## Project Structure
 

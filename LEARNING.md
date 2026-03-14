@@ -35,6 +35,14 @@ Insights, patterns, and pitfalls discovered during development.
 - i18n: store machine-readable codes in DB (`"default"`, `"completed"`), translate to display strings in the frontend
 
 
+## React frontend testing with happy-dom and @testing-library/react
+
+- Do NOT import `@testing-library/react` in the preload setup file — it evaluates `screen` at module load time, before DOM globals are set up, causing all `screen` queries to permanently throw
+- Set up happy-dom globals first, then register cleanup via dynamic import in `afterEach`: `afterEach(async () => { const { cleanup } = await import("@testing-library/react"); cleanup(); })`
+- Without `afterEach(cleanup)`, rendered components accumulate across tests in the same file, causing "Found multiple elements" errors
+- Elysia does not automatically serialize class instances as JSON — return plain object literals from handlers and define TypeBox `response` schemas explicitly so Elysia sets the correct Content-Type and validates output
+- `app.handle(new Request(...))` is the idiomatic way to test Elysia endpoints without starting a real HTTP server
+
 ## LocalStorageManager (framework/)
 
 - Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`

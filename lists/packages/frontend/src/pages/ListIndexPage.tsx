@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ListWithStatus } from "@lists/shared";
-import { ListCard } from "../components/ListCard";
-import { CreateListModal } from "../components/CreateListModal";
+import { ListCard } from "@frontend/components/ListCard";
+import { CreateListModal } from "@frontend/components/CreateListModal";
 
 const API_BASE = "http://localhost:3001";
 

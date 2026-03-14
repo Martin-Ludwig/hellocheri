@@ -1,7 +1,7 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
-import { ListIndexPage } from "./ListIndexPage";
+import { ListIndexPage } from "@frontend/pages/ListIndexPage";
 
 const makeFetchResponse = (data: unknown, status = 200) =>
   mock(async () =>

@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 import { ListWithStatus } from "@lists/shared";
-import { ListCard } from "./ListCard";
+import { ListCard } from "@frontend/components/ListCard";
 
 const now = "2026-03-12T00:00:00.000Z";
 

@@ -1,7 +1,7 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import React from "react";
-import { CreateListModal } from "./CreateListModal";
+import { CreateListModal } from "@frontend/components/CreateListModal";
 
 const mockOnCreated = mock(() => {});
 const mockOnClose = mock(() => {});

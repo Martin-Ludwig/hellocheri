@@ -45,6 +45,15 @@ Insights, patterns, and pitfalls discovered during development.
 - `app.handle(new Request(...))` is the idiomatic way to test Elysia endpoints without starting a real HTTP server
 - To return a 404 from an Elysia handler, use `set.status = 404; return { error: "..." }` — do NOT use the `error()` context helper with a typed `response` map, as it causes a 500 instead
 
+## React Router v7
+
+- In v7, `react-router` and `react-router-dom` are merged into a single `react-router` package — import everything from `react-router`
+- Use `BrowserRouter` + `Routes` + `Route` for the component-based API
+- `useNavigate()` and `useParams()` require a router context — in tests, wrap with `MemoryRouter`
+- For navigation tests, render inside `MemoryRouter` with `Routes` so `fireEvent.click` actually transitions to the target route and assertions can check rendered output
+- When adding `useNavigate()` to a component, all existing tests for that component must be wrapped in `MemoryRouter` or they will throw `useNavigate() may be used only in the context of a <Router>`
+- Bun's `sed -i` operates on the current working directory — always use absolute paths or explicit `--cwd` to avoid corrupting files in unexpected locations
+
 ## LocalStorageManager (framework/)
 
 - Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`

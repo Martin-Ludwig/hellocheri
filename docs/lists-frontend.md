@@ -6,6 +6,7 @@ React frontend bundled with Bun.
 
 - React 19 + TypeScript (strict)
 - Tailwind CSS v4
+- react-router v7 for client-side routing
 - Bun bundler (no Vite/webpack)
 
 ## Key conventions
@@ -18,25 +19,30 @@ React frontend bundled with Bun.
 
 ```
 src/
-├── index.html              # HTML shell — imports index.css and index.tsx
-├── index.css               # Tailwind v4 entry (@import "tailwindcss")
-├── index.tsx               # React root — renders <App /> into #root
-├── App.tsx                 # Root component
+├── index.html                  # HTML shell — imports index.css and index.tsx
+├── index.css                   # Tailwind v4 entry (@import "tailwindcss")
+├── index.tsx                   # React root — renders <App /> into #root
+├── App.tsx                     # Root component — BrowserRouter + Routes
 ├── pages/
-│   └── ListIndexPage.tsx   # Index page: title, list overview, create button
+│   ├── ListIndexPage.tsx       # Index page: title, list overview, create button
+│   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete
 └── components/
-    ├── ListCard.tsx        # Single list card: name + completion badge
-    └── CreateListModal.tsx # Modal to create a new list
+    ├── ListCard.tsx             # Single list card: name + completion badge, navigates on click
+    └── CreateListModal.tsx      # Modal to create a new list
 ```
 
 ## API
 
 The backend runs on `http://localhost:3001`. Endpoints used by the frontend:
 
-| Method | Path     | Description              |
-|--------|----------|--------------------------|
-| GET    | /lists   | Fetch all lists          |
-| POST   | /lists   | Create a list            |
+| Method | Path                              | Description              |
+|--------|-----------------------------------|--------------------------|
+| GET    | /lists                            | Fetch all lists          |
+| POST   | /lists                            | Create a list            |
+| GET    | /lists/:id                        | Fetch a single list      |
+| GET    | /lists/:id/items                  | Fetch items for a list   |
+| PATCH  | /lists/:id/items/:itemId          | Toggle item completion   |
+| DELETE | /lists/:id/items/:itemId          | Delete an item           |
 
 ## Testing
 

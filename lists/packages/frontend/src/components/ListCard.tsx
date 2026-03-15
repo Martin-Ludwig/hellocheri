@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import type { ListWithStatus } from "@lists/shared";
 
 interface ListCardProps {
@@ -21,10 +22,16 @@ function CompletionBadge({ list }: { list: ListWithStatus }) {
 }
 
 export function ListCard({ list }: ListCardProps) {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+    <button
+      type="button"
+      onClick={() => void navigate(`/lists/${list.id}`)}
+      className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm hover:bg-gray-50 cursor-pointer text-left"
+    >
       <span className="text-sm font-medium text-gray-900">{list.name}</span>
       <CompletionBadge list={list} />
-    </div>
+    </button>
   );
 }

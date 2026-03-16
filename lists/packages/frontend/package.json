@@ -2,13 +2,14 @@
   "name": "@lists/frontend",
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/index.tsx",
+    "dev": "bun --hot src/index.html",
     "build": "bun build src/index.tsx --outdir dist",
     "test": "bun test"
   },
   "dependencies": {
     "@framework": "workspace:*",
     "@lists/shared": "workspace:*",
+    "bun-plugin-tailwind": "0.1.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-router": "7.13.1"
@@ -21,8 +22,7 @@
     "@types/bun": "latest",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "happy-dom": "latest",
-    "tailwindcss": "4.2.1"
+    "happy-dom": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"

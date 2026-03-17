@@ -1,5 +1,5 @@
 [test]
-preload = ["./tests/setup.ts"]
+preload = ["./tests/dom-setup.ts", "./tests/setup.ts"]
 
 [serve.static]
 plugins = ["bun-plugin-tailwind"]

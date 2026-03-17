@@ -16,8 +16,8 @@ Insights, patterns, and pitfalls discovered during development.
 
 ## Framework React Components
 
-- React component tests need a DOM environment — configure `happy-dom` via `bunfig.toml` in the package: `[test] preload = ["happy-dom"]`
-- Install `happy-dom` and `@testing-library/react` as `devDependencies` in the package that owns the tests (`framework/package.json`)
+- React component tests need a DOM environment — install `happy-dom` and `@happy-dom/global-registrator` as devDependencies, then configure two preload files in `bunfig.toml` (see below)
+- Install `happy-dom`, `@happy-dom/global-registrator`, and `@testing-library/react` as `devDependencies` in the package that owns the tests
 - Use `React.useId()` to auto-generate stable, unique IDs for label/aria wiring — avoids prop drilling `id` for simple cases
 - `React.forwardRef` is required for form inputs so consumers can call `.focus()` or integrate with form libraries
 - Base components in `framework/` have no Tailwind classes — projects wrap them and add classes via `className`
@@ -38,9 +38,13 @@ Insights, patterns, and pitfalls discovered during development.
 
 ## React frontend testing with happy-dom and @testing-library/react
 
-- Do NOT import `@testing-library/react` in the preload setup file — it evaluates `screen` at module load time, before DOM globals are set up, causing all `screen` queries to permanently throw
-- Set up happy-dom globals first, then register cleanup via dynamic import in `afterEach`: `afterEach(async () => { const { cleanup } = await import("@testing-library/react"); cleanup(); })`
+- Bun has no built-in DOM support. Use `@happy-dom/global-registrator` — NOT `environment = "happy-dom"` in bunfig.toml; that key does not exist in Bun 1.3.x.
+- Use TWO preload files in `bunfig.toml`: `preload = ["./tests/dom-setup.ts", "./tests/setup.ts"]`
+  - `dom-setup.ts`: only `import { GlobalRegistrator } from "@happy-dom/global-registrator"; GlobalRegistrator.register();`
+  - `setup.ts`: only `import { cleanup } from "@testing-library/react"; afterEach(() => { cleanup(); });`
+- The split is required because ES modules evaluate all imports before any top-level code runs. If `GlobalRegistrator.register()` and `import ... from "@testing-library/react"` are in the same file, `@testing-library/dom`'s `screen` object initialises before the DOM globals are set up — all `screen` queries permanently throw.
 - Without `afterEach(cleanup)`, rendered components accumulate across tests in the same file, causing "Found multiple elements" errors
+- TypeScript also needs `"DOM"` and `"DOM.Iterable"` in the `lib` array in `tsconfig.json` — without it, VSCode reports "Cannot find name 'document'"
 - Elysia does not automatically serialize class instances as JSON — return plain object literals from handlers and define TypeBox `response` schemas explicitly so Elysia sets the correct Content-Type and validates output
 - `app.handle(new Request(...))` is the idiomatic way to test Elysia endpoints without starting a real HTTP server
 - To return a 404 from an Elysia handler, use `set.status = 404; return { error: "..." }` — do NOT use the `error()` context helper with a typed `response` map, as it causes a 500 instead

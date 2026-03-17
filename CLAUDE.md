@@ -37,7 +37,8 @@ Share `plan.md` with the user for review. Wait for feedback and incorporate any 
 ### 6. Wait for "go"
 Do NOT begin implementation until the user explicitly approves with a "go".
 
-### 7. Before pull request delete plan.md.
+### 7. Before pull request 
+Before pull request, Delete plan.md. But decide first: If the plan contains non-obvious architectural decisions or tradeoffs worth preserving, extract them into issue-worklogs/<ISSUE-ID>.md at the repo root (next to framework/).
 
 ---
 

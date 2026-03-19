@@ -108,6 +108,50 @@ const app = new Elysia()
       },
     },
   )
+  .post(
+    "/lists/:id/items",
+    ({ params, body, set }) => {
+      const list = db
+        .query<{ id: string }, [string]>("SELECT id FROM lists WHERE id = ?")
+        .get(params.id);
+
+      if (!list) {
+        set.status = 404;
+        return { error: "List not found" };
+      }
+
+      const positionRow = db
+        .query<{ next_position: number }, [string]>(
+          "SELECT COALESCE(MAX(position), -1) + 1 AS next_position FROM list_items WHERE list_id = ?",
+        )
+        .get(params.id)!;
+
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      db.query(
+        "INSERT INTO list_items (id, list_id, text, status, position, created_at, updated_at) VALUES ($id, $listId, $text, 0, $position, $now, $now)",
+      ).run({ $id: id, $listId: params.id, $text: body.text, $position: positionRow.next_position, $now: now });
+
+      set.status = 201;
+      return {
+        id,
+        listId: params.id,
+        text: body.text,
+        status: 0,
+        position: positionRow.next_position,
+        createdAt: now,
+        updatedAt: now,
+      };
+    },
+    {
+      body: t.Object({ text: t.String({ minLength: 1 }) }),
+      response: {
+        201: listItemSchema,
+        404: notFoundSchema,
+      },
+    },
+  )
   .patch(
     "/lists/:id/items/:itemId",
     ({ params, body, set }) => {

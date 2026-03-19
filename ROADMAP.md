@@ -21,3 +21,5 @@
 - [x] Lists shared types + DB schema (HEL-8)
 - [x] Lists backend — item endpoints: GET /lists/:id, GET /lists/:id/items, PATCH /lists/:id/items/:itemId, DELETE /lists/:id/items/:itemId (HEL-70)
 - [x] Lists frontend — detail page with items, check off, delete (HEL-71)
+- [x] Lists backend — POST /lists/:id/items to create items (HEL-76)
+- [x] Lists frontend — add item input in detail view, submit on Enter (HEL-76)

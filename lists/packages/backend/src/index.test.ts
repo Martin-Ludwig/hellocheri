@@ -127,6 +127,84 @@ describe("GET /lists/:id/items", () => {
   });
 });
 
+describe("POST /lists/:id/items", () => {
+  test("creates an item and returns 201 with item shape", async () => {
+    const listId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: listId, $name: "Shopping", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${listId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "Milk" }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body).toMatchObject({
+      listId,
+      text: "Milk",
+      status: 0,
+      position: 0,
+    });
+    expect(typeof body.id).toBe("string");
+  });
+
+  test("assigns position as max(position) + 1 for subsequent items", async () => {
+    const listId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: listId, $name: "Shopping", $now: now });
+    db.query(
+      "INSERT INTO list_items (id, list_id, text, status, position, created_at, updated_at) VALUES ($id, $listId, $text, 0, 0, $now, $now)",
+    ).run({ $id: crypto.randomUUID(), $listId: listId, $text: "First", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${listId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "Second" }),
+      }),
+    );
+    const body = await response.json();
+    expect(body.position).toBe(1);
+  });
+
+  test("returns 404 for an unknown list", async () => {
+    const response = await app.handle(
+      new Request("http://localhost/lists/does-not-exist/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "Milk" }),
+      }),
+    );
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body.error).toBe("List not found");
+  });
+
+  test("returns 422 when text is empty string", async () => {
+    const listId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: listId, $name: "Shopping", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${listId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "" }),
+      }),
+    );
+    expect(response.status).toBe(422);
+  });
+});
+
 describe("PATCH /lists/:id/items/:itemId", () => {
   test("updates the item status", async () => {
     const listId = crypto.randomUUID();

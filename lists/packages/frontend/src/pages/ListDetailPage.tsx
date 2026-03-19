@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ListItem, ItemStatus } from "@lists/shared";
 
@@ -13,6 +13,8 @@ export function ListDetailPage() {
   const { id: listId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [fetchState, setFetchState] = useState<FetchState>({ status: "loading" });
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const nameBeforeEditRef = useRef<string>("");
 
   const loadListAndItems = useCallback(async () => {
     if (!listId) return;
@@ -68,6 +70,52 @@ export function ListDetailPage() {
     void loadListAndItems();
   }, [loadListAndItems]);
 
+  useEffect(() => {
+    if (fetchState.status === "success" && titleRef.current) {
+      if (titleRef.current.textContent !== fetchState.listName) {
+        titleRef.current.textContent = fetchState.listName;
+      }
+    }
+  }, [fetchState]);
+
+  function handleTitleFocus() {
+    if (fetchState.status === "success") {
+      nameBeforeEditRef.current = fetchState.listName;
+    }
+  }
+
+  function handleTitleKeyDown(event: React.KeyboardEvent<HTMLHeadingElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      titleRef.current?.blur();
+    }
+    if (event.key === "Escape") {
+      if (titleRef.current) {
+        titleRef.current.textContent = nameBeforeEditRef.current;
+      }
+      titleRef.current?.blur();
+    }
+  }
+
+  async function handleTitleBlur() {
+    if (!listId || !titleRef.current || fetchState.status !== "success") return;
+
+    const newName = titleRef.current.textContent?.trim() ?? "";
+
+    if (!newName || newName === fetchState.listName) {
+      titleRef.current.textContent = fetchState.listName;
+      return;
+    }
+
+    await fetch(`${API_BASE}/lists/${listId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    });
+
+    setFetchState({ ...fetchState, listName: newName });
+  }
+
   async function handleToggleItem(item: ListItem) {
     const newStatus = item.isCompleted() ? ItemStatus.Default : ItemStatus.Completed;
     await fetch(`${API_BASE}/lists/${listId}/items/${item.id}`, {
@@ -97,7 +145,15 @@ export function ListDetailPage() {
         </button>
 
         {fetchState.status === "success" && (
-          <h1 className="text-2xl font-bold text-gray-900">{fetchState.listName}</h1>
+          <h1
+            ref={titleRef}
+            contentEditable="plaintext-only"
+            suppressContentEditableWarning
+            className="text-2xl font-bold text-gray-900 cursor-text outline-none"
+            onFocus={handleTitleFocus}
+            onKeyDown={handleTitleKeyDown}
+            onBlur={() => void handleTitleBlur()}
+          />
         )}
       </div>
 

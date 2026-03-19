@@ -117,6 +117,92 @@ describe("ListDetailPage", () => {
     });
   });
 
+  test("title is contenteditable", async () => {
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
+    const heading = screen.getByRole("heading") as HTMLElement;
+    expect(heading.getAttribute("contenteditable")).toBe("plaintext-only");
+  });
+
+  test("blurring the title with a new name sends a PATCH request", async () => {
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = mock((url: string, init?: RequestInit) => {
+      fetchCalls.push({ url, init });
+      if (init?.method === "PATCH" && !url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify({ ...mockList, name: "Updated" }), { status: 200 }));
+      }
+      if (url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
+
+    const heading = screen.getByRole("heading") as HTMLElement;
+    fireEvent.focus(heading);
+    heading.textContent = "Updated";
+    fireEvent.blur(heading);
+
+    await waitFor(() => {
+      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse(patchCall?.init?.body as string) as { name: string };
+      expect(body.name).toBe("Updated");
+    });
+  });
+
+  test("blurring the title with the same name skips the PATCH request", async () => {
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = mock((url: string, init?: RequestInit) => {
+      fetchCalls.push({ url, init });
+      if (url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
+
+    const heading = screen.getByRole("heading") as HTMLElement;
+    fireEvent.focus(heading);
+    // textContent already equals "Groceries" - no change
+    fireEvent.blur(heading);
+
+    await waitFor(() => {
+      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
+      expect(patchCall).toBeUndefined();
+    });
+  });
+
+  test("pressing Escape reverts the title and skips the PATCH request", async () => {
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = mock((url: string, init?: RequestInit) => {
+      fetchCalls.push({ url, init });
+      if (url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
+
+    const heading = screen.getByRole("heading") as HTMLElement;
+    fireEvent.focus(heading);
+    heading.textContent = "Edited";
+    fireEvent.keyDown(heading, { key: "Escape" });
+
+    expect(heading.textContent).toBe("Groceries");
+
+    await waitFor(() => {
+      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
+      expect(patchCall).toBeUndefined();
+    });
+  });
+
   test("calls DELETE and reloads on delete button click", async () => {
     const fetchCalls: { url: string; init?: RequestInit }[] = [];
     globalThis.fetch = mock((url: string, init?: RequestInit) => {

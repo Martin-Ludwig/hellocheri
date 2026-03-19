@@ -178,6 +178,46 @@ const app = new Elysia()
       },
     },
   )
+  .patch(
+    "/lists/:id",
+    ({ params, body, set }) => {
+      const row = db
+        .query<{ id: string }, [string]>("SELECT id FROM lists WHERE id = ?")
+        .get(params.id);
+
+      if (!row) {
+        set.status = 404;
+        return { error: "List not found" };
+      }
+
+      const now = new Date().toISOString();
+
+      db.query(
+        "UPDATE lists SET name = $name, updated_at = $now WHERE id = $id",
+      ).run({ $name: body.name, $now: now, $id: params.id });
+
+      const updated = db
+        .query<ListWithStatusRow, [string]>(
+          "SELECT id, name, created_at, updated_at, completed FROM lists_with_status WHERE id = ?",
+        )
+        .get(params.id)!;
+
+      return {
+        id: updated.id,
+        name: updated.name,
+        createdAt: updated.created_at,
+        updatedAt: updated.updated_at,
+        completed: updated.completed === 1,
+      };
+    },
+    {
+      body: t.Object({ name: t.String({ minLength: 1 }) }),
+      response: {
+        200: listWithStatusSchema,
+        404: notFoundSchema,
+      },
+    },
+  )
   .post(
     "/lists",
     ({ body }) => {

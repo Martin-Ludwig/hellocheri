@@ -216,6 +216,79 @@ describe("DELETE /lists/:id/items/:itemId", () => {
   });
 });
 
+describe("PATCH /lists/:id", () => {
+  test("updates the list name and returns the updated list", async () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: id, $name: "Old Name", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "New Name" }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.id).toBe(id);
+    expect(body.name).toBe("New Name");
+    expect(body.completed).toBe(false);
+  });
+
+  test("persists the updated name", async () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: id, $name: "Before", $now: now });
+
+    await app.handle(
+      new Request(`http://localhost/lists/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "After" }),
+      }),
+    );
+
+    const response = await app.handle(new Request(`http://localhost/lists/${id}`));
+    const body = await response.json();
+    expect(body.name).toBe("After");
+  });
+
+  test("returns 404 for an unknown id", async () => {
+    const response = await app.handle(
+      new Request("http://localhost/lists/does-not-exist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Anything" }),
+      }),
+    );
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body.error).toBe("List not found");
+  });
+
+  test("returns 422 when name is empty string", async () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: id, $name: "Name", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "" }),
+      }),
+    );
+    expect(response.status).toBe(422);
+  });
+});
+
 describe("POST /lists", () => {
   test("creates a list and returns it", async () => {
     const response = await app.handle(

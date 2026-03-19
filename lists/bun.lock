@@ -8,6 +8,7 @@
     "../framework": {
       "name": "@framework",
       "devDependencies": {
+        "@happy-dom/global-registrator": "^20.8.4",
         "@testing-library/react": "latest",
         "@types/react": "19.2.14",
         "@types/react-dom": "19.2.3",

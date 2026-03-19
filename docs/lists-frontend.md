@@ -25,7 +25,7 @@ src/
 ├── App.tsx                     # Root component — BrowserRouter + Routes
 ├── pages/
 │   ├── ListIndexPage.tsx       # Index page: title, list overview, create button
-│   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete
+│   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete; contenteditable title rename
 └── components/
     ├── ListCard.tsx             # Single list card: name + completion badge, navigates on click
     └── CreateListModal.tsx      # Modal to create a new list
@@ -41,6 +41,7 @@ The backend runs on `http://localhost:3001`. Endpoints used by the frontend:
 | POST   | /lists                            | Create a list            |
 | GET    | /lists/:id                        | Fetch a single list      |
 | GET    | /lists/:id/items                  | Fetch items for a list   |
+| PATCH  | /lists/:id                        | Update list name         |
 | PATCH  | /lists/:id/items/:itemId          | Toggle item completion   |
 | DELETE | /lists/:id/items/:itemId          | Delete an item           |
 

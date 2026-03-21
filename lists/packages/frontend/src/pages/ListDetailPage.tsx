@@ -128,19 +128,24 @@ export function ListDetailPage() {
     void loadListAndItems();
   }
 
-  async function handleAddItem() {
+  async function handleAddItem(): Promise<void> {
     const text = newItemText.trim();
     if (!text || !listId) return;
 
-    await fetch(`${API_BASE}/lists/${listId}/items`, {
+    const response = await fetch(`${API_BASE}/lists/${listId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
 
-    setNewItemText("");
-    addItemInputRef.current?.focus();
-    void loadListAndItems();
+    if (response.ok) {
+      // todo: show error feedback to user
+      
+
+      setNewItemText("");
+      addItemInputRef.current?.focus();
+      void loadListAndItems();
+    }
   }
 
   function handleAddItemKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {

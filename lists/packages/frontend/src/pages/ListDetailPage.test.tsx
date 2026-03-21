@@ -203,6 +203,84 @@ describe("ListDetailPage", () => {
     });
   });
 
+  test("add item input is visible when list is loaded", async () => {
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByText("Groceries")).toBeDefined());
+    const input = screen.getByPlaceholderText("Add item...") as HTMLInputElement;
+    expect(input).toBeDefined();
+  });
+
+  test("pressing Enter with text calls POST and clears input", async () => {
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = mock((url: string, init?: RequestInit) => {
+      fetchCalls.push({ url, init });
+      if (init?.method === "POST" && url.includes("/items")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ id: "new-item", listId: LIST_ID, text: "Butter", status: 0, position: 2, createdAt: now, updatedAt: now }),
+            { status: 201 },
+          ),
+        );
+      }
+      if (url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
+
+    const input = screen.getByPlaceholderText("Add item...") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Butter" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      const postCall = fetchCalls.find((call) => call.init?.method === "POST" && call.url.includes("/items"));
+      expect(postCall).toBeDefined();
+      const body = JSON.parse(postCall?.init?.body as string) as { text: string };
+      expect(body.text).toBe("Butter");
+    });
+
+    await waitFor(() => {
+      expect(input.value).toBe("");
+    });
+  });
+
+  test("pressing Enter with empty input does not call POST", async () => {
+    const fetchCalls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = mock((url: string, init?: RequestInit) => {
+      fetchCalls.push({ url, init });
+      if (url.includes("/items")) {
+        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
+
+    const input = screen.getByPlaceholderText("Add item...");
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      const postCall = fetchCalls.find((call) => call.init?.method === "POST" && call.url.includes("/items"));
+      expect(postCall).toBeUndefined();
+    });
+  });
+
+  test("pressing Escape clears the input value", async () => {
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
+
+    const input = screen.getByPlaceholderText("Add item...") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Something" } });
+    expect(input.value).toBe("Something");
+
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(input.value).toBe("");
+  });
+
   test("calls DELETE and reloads on delete button click", async () => {
     const fetchCalls: { url: string; init?: RequestInit }[] = [];
     globalThis.fetch = mock((url: string, init?: RequestInit) => {

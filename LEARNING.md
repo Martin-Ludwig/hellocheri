@@ -49,6 +49,14 @@ Insights, patterns, and pitfalls discovered during development.
 - `app.handle(new Request(...))` is the idiomatic way to test Elysia endpoints without starting a real HTTP server
 - To return a 404 from an Elysia handler, use `set.status = 404; return { error: "..." }` — do NOT use the `error()` context helper with a typed `response` map, as it causes a 500 instead
 
+## SQLite position assignment — race condition
+
+The current `POST /lists/:id/items` handler computes position with a separate `SELECT COALESCE(MAX(position), -1) + 1` before the `INSERT`. Under concurrent requests these two statements are not atomic, so two items can receive the same position value.
+
+This is acceptable for a single-user todo app (SQLite serializes writes anyway), but would be a real problem with concurrent users or if `(list_id, position)` were given a unique constraint.
+
+Safer options if this ever matters: collapse into a single `INSERT INTO list_items (..., position) SELECT ..., COALESCE(MAX(position), -1) + 1 FROM list_items WHERE list_id = $listId`, or add a `UNIQUE(list_id, position)` constraint and retry on conflict.
+
 ## React Router v7
 
 - In v7, `react-router` and `react-router-dom` are merged into a single `react-router` package — import everything from `react-router`

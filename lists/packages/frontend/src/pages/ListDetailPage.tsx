@@ -13,7 +13,9 @@ export function ListDetailPage() {
   const { id: listId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [fetchState, setFetchState] = useState<FetchState>({ status: "loading" });
+  const [newItemText, setNewItemText] = useState("");
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const addItemInputRef = useRef<HTMLInputElement>(null);
   const nameBeforeEditRef = useRef<string>("");
 
   const loadListAndItems = useCallback(async () => {
@@ -126,6 +128,36 @@ export function ListDetailPage() {
     void loadListAndItems();
   }
 
+  async function handleAddItem(): Promise<void> {
+    const text = newItemText.trim();
+    if (!text || !listId) return;
+
+    const response = await fetch(`${API_BASE}/lists/${listId}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+
+    if (response.ok) {
+      // todo: show error feedback to user
+      
+
+      setNewItemText("");
+      addItemInputRef.current?.focus();
+      void loadListAndItems();
+    }
+  }
+
+  function handleAddItemKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleAddItem();
+    }
+    if (event.key === "Escape") {
+      setNewItemText("");
+    }
+  }
+
   async function handleDeleteItem(itemId: string) {
     await fetch(`${API_BASE}/lists/${listId}/items/${itemId}`, {
       method: "DELETE",
@@ -203,6 +235,18 @@ export function ListDetailPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {fetchState.status === "success" && (
+        <input
+          ref={addItemInputRef}
+          type="text"
+          value={newItemText}
+          onChange={(event) => setNewItemText(event.target.value)}
+          onKeyDown={handleAddItemKeyDown}
+          placeholder="Add item..."
+          className="mt-4 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        />
       )}
     </div>
   );

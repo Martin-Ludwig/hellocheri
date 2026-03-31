@@ -94,6 +94,21 @@ The repo root also has a `framework/` folder for code shared across multiple pro
 
 ---
 
+## Linear
+
+Config: `.linear.toml` at the repo root (workspace, team, sort order).
+
+```sh
+bunx @schpet/linear-cli issue list
+bunx @schpet/linear-cli issue view HEL-123
+bunx @schpet/linear-cli issue create --title "..." --description-file /tmp/desc.md --parent HEL-123
+bunx @schpet/linear-cli issue update HEL-123 --status "In Progress"
+```
+
+Always use `--description-file` (not `--description`) for multi-line content to avoid shell escaping issues.
+
+---
+
 ## Package Manager
 
 Always use `bun` over `npm`. Never use `npm`, `npx`, or `yarn`.

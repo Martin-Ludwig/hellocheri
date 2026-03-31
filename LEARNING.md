@@ -66,6 +66,14 @@ Safer options if this ever matters: collapse into a single `INSERT INTO list_ite
 - When adding `useNavigate()` to a component, all existing tests for that component must be wrapped in `MemoryRouter` or they will throw `useNavigate() may be used only in the context of a <Router>`
 - Bun's `sed -i` operates on the current working directory — always use absolute paths or explicit `--cwd` to avoid corrupting files in unexpected locations
 
+## IndexedDB testing
+
+- `happy-dom` does not implement `indexedDB` — `globalThis.indexedDB` stays `undefined` even after `GlobalRegistrator.register()`
+- Use `fake-indexeddb` (npm) instead: import `{ IDBFactory }` and assign `globalThis.indexedDB = new IDBFactory()` in `beforeEach` for a fully isolated, in-memory database per test
+- `fake-indexeddb`'s default export is an already-constructed `IDBFactory` instance — import the named `IDBFactory` class when you need to create fresh instances
+- IndexedDB transactions auto-commit at macrotask boundaries, not microtask boundaries — awaiting an `IDBRequest` resolved from its own `onsuccess` handler keeps the transaction open, because the microtask runs before the runtime checks for auto-commit
+- For operations that need to read data from two object stores in one transaction, start both requests synchronously (before any `await`) and then `await Promise.all([...])` — this runs them in parallel rather than sequentially
+
 ## LocalStorageManager (framework/)
 
 - Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`

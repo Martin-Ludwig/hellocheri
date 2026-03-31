@@ -108,3 +108,18 @@ After EVERY code change, check and update these files if needed:
 | `IDEAS.md` | Add new feature ideas that come up during work |
 | `LEARNING.md` | Document new insights, patterns, pitfalls |
 | `CLAUDE.md` | Add new commands, key files, conventions as needed |
+
+---
+
+## Issue Tracking / Linear
+
+Config: `.linear.toml` at the repo root (workspace, team, sort order).
+
+```sh
+bunx @schpet/linear-cli issue list
+bunx @schpet/linear-cli issue view HEL-123
+bunx @schpet/linear-cli issue create --title "..." --description-file /tmp/desc.md --parent HEL-123
+bunx @schpet/linear-cli issue update HEL-123 --status "In Progress"
+```
+
+Always use `--description-file` (not `--description`) for multi-line content to avoid shell escaping issues.

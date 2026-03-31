@@ -93,10 +93,15 @@ export class ListsApiStore implements ListsStore {
   }
 
   async updateListItem(listId: string, itemId: string, input: UpdateListItemInput): Promise<ListItem> {
+    const body: { text?: string; status?: number; position?: number } = {};
+    if (input.text !== undefined) body.text = input.text;
+    if (input.status !== undefined) body.status = input.status;
+    if (input.position !== undefined) body.position = input.position;
+
     const response = await fetch(`${this.baseUrl}/lists/${listId}/items/${itemId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: input.status }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error("Failed to update list item");
     const data = (await response.json()) as ListItemApiResponse;

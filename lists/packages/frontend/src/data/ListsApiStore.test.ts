@@ -136,6 +136,66 @@ describe("ListsApiStore", () => {
     expect(result.isCompleted()).toBe(true);
   });
 
+  test("updateListItem serializes text when provided", async () => {
+    const fetchSpy = makeFetchSpy({
+      id: "i1",
+      listId: "3",
+      text: "Buy whole milk",
+      status: 0,
+      position: 0,
+      createdAt: "2024-01-01",
+      updatedAt: "2024-01-02",
+    });
+
+    await store.updateListItem("3", "i1", new UpdateListItemInput("Buy whole milk"));
+
+    expect(fetchSpy).toHaveBeenCalledWith(`${BASE_URL}/lists/3/items/i1`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "Buy whole milk" }),
+    });
+  });
+
+  test("updateListItem serializes position when provided", async () => {
+    const fetchSpy = makeFetchSpy({
+      id: "i1",
+      listId: "3",
+      text: "Buy milk",
+      status: 0,
+      position: 2,
+      createdAt: "2024-01-01",
+      updatedAt: "2024-01-02",
+    });
+
+    await store.updateListItem("3", "i1", new UpdateListItemInput(undefined, undefined, 2));
+
+    expect(fetchSpy).toHaveBeenCalledWith(`${BASE_URL}/lists/3/items/i1`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ position: 2 }),
+    });
+  });
+
+  test("updateListItem serializes all provided fields together", async () => {
+    const fetchSpy = makeFetchSpy({
+      id: "i1",
+      listId: "3",
+      text: "Buy oat milk",
+      status: 1,
+      position: 3,
+      createdAt: "2024-01-01",
+      updatedAt: "2024-01-02",
+    });
+
+    await store.updateListItem("3", "i1", new UpdateListItemInput("Buy oat milk", ItemStatus.Completed, 3));
+
+    expect(fetchSpy).toHaveBeenCalledWith(`${BASE_URL}/lists/3/items/i1`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "Buy oat milk", status: ItemStatus.Completed, position: 3 }),
+    });
+  });
+
   test("deleteListItem sends DELETE to /lists/:id/items/:itemId", async () => {
     const fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
 

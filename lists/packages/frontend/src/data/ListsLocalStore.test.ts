@@ -154,6 +154,12 @@ describe("ListsLocalStore", () => {
 
   // --- createListItem ---
 
+  test("createListItem throws when the list does not exist", async () => {
+    await expect(
+      store.createListItem("non-existent-id", new CreateListItemInput("non-existent-id", "Task", 0)),
+    ).rejects.toThrow("List not found");
+  });
+
   test("createListItem returns a ListItem with a generated id, default status, and correct position", async () => {
     const list = await store.createList(new CreateListInput("Groceries"));
 
@@ -169,6 +175,16 @@ describe("ListsLocalStore", () => {
   });
 
   // --- updateListItem ---
+
+  test("updateListItem throws when the item belongs to a different list", async () => {
+    const list1 = await store.createList(new CreateListInput("List 1"));
+    const list2 = await store.createList(new CreateListInput("List 2"));
+    const item = await store.createListItem(list1.id, new CreateListItemInput(list1.id, "Task", 0));
+
+    await expect(
+      store.updateListItem(list2.id, item.id, new UpdateListItemInput("Hijacked")),
+    ).rejects.toThrow("List item not found");
+  });
 
   test("updateListItem updates status and leaves other fields unchanged", async () => {
     const list = await store.createList(new CreateListInput("Groceries"));
@@ -206,6 +222,14 @@ describe("ListsLocalStore", () => {
   });
 
   // --- deleteListItem ---
+
+  test("deleteListItem throws when the item belongs to a different list", async () => {
+    const list1 = await store.createList(new CreateListInput("List 1"));
+    const list2 = await store.createList(new CreateListInput("List 2"));
+    const item = await store.createListItem(list1.id, new CreateListItemInput(list1.id, "Task", 0));
+
+    await expect(store.deleteListItem(list2.id, item.id)).rejects.toThrow("List item not found");
+  });
 
   test("deleteListItem removes the item so getListItems no longer returns it", async () => {
     const list = await store.createList(new CreateListInput("Groceries"));

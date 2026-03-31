@@ -199,7 +199,12 @@ export class ListsLocalStore implements ListsStore {
 
   async createListItem(listId: string, input: CreateListItemInput): Promise<ListItem> {
     const database = await this.openDatabase();
-    const transaction = database.transaction([LIST_ITEMS_STORE_NAME], "readwrite");
+    const transaction = database.transaction([LISTS_STORE_NAME, LIST_ITEMS_STORE_NAME], "readwrite");
+    const listsStore = transaction.objectStore(LISTS_STORE_NAME);
+    const listItemsStore = transaction.objectStore(LIST_ITEMS_STORE_NAME);
+
+    const storedList = await this.wrapRequest<StoredList | undefined>(listsStore.get(listId));
+    if (storedList === undefined) throw new Error(`List not found: ${listId}`);
 
     const now = new Date().toISOString();
     const storedItem: StoredListItem = {
@@ -212,7 +217,7 @@ export class ListsLocalStore implements ListsStore {
       updatedAt: now,
     };
 
-    await this.wrapRequest(transaction.objectStore(LIST_ITEMS_STORE_NAME).add(storedItem));
+    await this.wrapRequest(listItemsStore.add(storedItem));
     return new ListItem(
       storedItem.id,
       storedItem.listId,
@@ -230,7 +235,9 @@ export class ListsLocalStore implements ListsStore {
     const listItemsStore = transaction.objectStore(LIST_ITEMS_STORE_NAME);
 
     const storedItem = await this.wrapRequest<StoredListItem | undefined>(listItemsStore.get(itemId));
-    if (storedItem === undefined) throw new Error(`List item not found: ${itemId}`);
+    if (storedItem === undefined || storedItem.listId !== listId) {
+      throw new Error(`List item not found: ${itemId}`);
+    }
 
     const updatedItem: StoredListItem = {
       ...storedItem,
@@ -252,9 +259,16 @@ export class ListsLocalStore implements ListsStore {
     );
   }
 
-  async deleteListItem(_listId: string, itemId: string): Promise<void> {
+  async deleteListItem(listId: string, itemId: string): Promise<void> {
     const database = await this.openDatabase();
     const transaction = database.transaction([LIST_ITEMS_STORE_NAME], "readwrite");
-    await this.wrapRequest(transaction.objectStore(LIST_ITEMS_STORE_NAME).delete(itemId));
+    const listItemsStore = transaction.objectStore(LIST_ITEMS_STORE_NAME);
+
+    const storedItem = await this.wrapRequest<StoredListItem | undefined>(listItemsStore.get(itemId));
+    if (storedItem === undefined || storedItem.listId !== listId) {
+      throw new Error(`List item not found: ${itemId}`);
+    }
+
+    await this.wrapRequest(listItemsStore.delete(itemId));
   }
 }

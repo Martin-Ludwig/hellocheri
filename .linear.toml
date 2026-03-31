@@ -1,0 +1,6 @@
+# linear cli
+# https://github.com/schpet/linear-cli
+
+workspace = "hellocheri"
+team_id = "HEL"
+issue_sort = "manual"

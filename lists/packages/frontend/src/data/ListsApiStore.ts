@@ -85,7 +85,7 @@ export class ListsApiStore implements ListsStore {
     const response = await fetch(`${this.baseUrl}/lists/${listId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: input.text }),
+      body: JSON.stringify({ text: input.text, position: input.position }),
     });
     if (!response.ok) throw new Error("Failed to create list item");
     const data = (await response.json()) as ListItemApiResponse;

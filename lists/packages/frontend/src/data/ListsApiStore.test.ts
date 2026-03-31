@@ -108,7 +108,7 @@ describe("ListsApiStore", () => {
     expect(fetchSpy).toHaveBeenCalledWith(`${BASE_URL}/lists/3/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: "Buy eggs" }),
+      body: JSON.stringify({ text: "Buy eggs", position: 1 }),
     });
     expect(result).toBeInstanceOf(ListItem);
     expect(result.text).toBe("Buy eggs");

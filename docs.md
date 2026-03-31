@@ -13,6 +13,5 @@
 ## Conventions
 
 - [CLAUDE.md](./CLAUDE.md) — AI assistant and developer conventions
-- [ROADMAP.md](./ROADMAP.md) — Project roadmap and milestones
 - [IDEAS.md](./IDEAS.md) — Feature ideas backlog
 - [LEARNING.md](./LEARNING.md) — Insights and patterns

@@ -74,27 +74,8 @@ Write code that is easy to read and maintain. Prefer clarity over cleverness and
 ### Patterns
 - Solve the same problem the same way everywhere, no creative variations
 
----
 
-## Project Structure
-
-Each project follows this workspace layout:
-
-```
-<project>/
-├── packages/
-│   ├── shared/      # Types, interfaces, validation shared between frontend and backend
-│   ├── frontend/    # React App (Bun bundled)
-│   └── backend/     # Elysia REST API
-├── package.json     # Workspace root
-└── bunfig.toml
-```
-
-The repo root also has a `framework/` folder for code shared across multiple projects.
-
----
-
-## Package Manager
+## Bun
 
 Always use `bun` over `npm`. Never use `npm`, `npx`, or `yarn`.
 
@@ -114,6 +95,7 @@ bun run build        # Build for production
 - Tests MUST pass before code is committed
 - Use `test()` — not `it()`. Bun's docs only document `test()`
 - Import from `bun:test`: `import { describe, test, expect } from "bun:test"`
+- run bun install before testing (once is enough)
 
 ## Documentation
 
@@ -123,7 +105,6 @@ After EVERY code change, check and update these files if needed:
 
 | File | When to update |
 | ---- | -------------- |
-| `ROADMAP.md` | Check off roadmap checkboxes, add new phases/tasks as needed |
 | `IDEAS.md` | Add new feature ideas that come up during work |
 | `LEARNING.md` | Document new insights, patterns, pitfalls |
 | `CLAUDE.md` | Add new commands, key files, conventions as needed |

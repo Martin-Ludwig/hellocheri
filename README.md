@@ -17,7 +17,6 @@ A monorepo containing multiple projects built with Bun, TypeScript, React, and E
 ├── lists/           # Lists project
 ├── docs.md          # Documentation index
 ├── CLAUDE.md        # AI assistant conventions
-├── ROADMAP.md       # Project roadmap
 ├── IDEAS.md         # Feature ideas
 └── LEARNING.md      # Insights and patterns
 ```

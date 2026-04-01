@@ -58,7 +58,7 @@ export class ListsApiStore implements ListsStore {
     const response = await fetch(`${this.baseUrl}/lists/${listId}`);
     if (!response.ok) throw new Error("Failed to fetch list");
     const data = (await response.json()) as ListWithStatusApiResponse;
-    return new ListWithStatus(data.id, data.name, data.createdAt, data.updatedAt, data.completed);
+    return new ListWithStatus(data.id, data.name, data.createdAt, data.updatedAt, data.completed, data.itemCount ?? 0);
   }
 
   async updateList(listId: string, input: UpdateListInput): Promise<ListWithStatus> {
@@ -69,7 +69,7 @@ export class ListsApiStore implements ListsStore {
     });
     if (!response.ok) throw new Error("Failed to update list");
     const data = (await response.json()) as ListWithStatusApiResponse;
-    return new ListWithStatus(data.id, data.name, data.createdAt, data.updatedAt, data.completed);
+    return new ListWithStatus(data.id, data.name, data.createdAt, data.updatedAt, data.completed, data.itemCount ?? 0);
   }
 
   async getListItems(listId: string): Promise<ListItem[]> {

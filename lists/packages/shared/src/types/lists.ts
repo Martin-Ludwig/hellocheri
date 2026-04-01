@@ -13,7 +13,7 @@ export class List {
   ) {}
 }
 
-// Mirrors the lists_with_status view — completed is computed, not stored
+// Mirrors the lists_with_status view — completed and itemCount are computed, not stored
 export class ListWithStatus extends List {
   constructor(
     id: string,
@@ -21,6 +21,7 @@ export class ListWithStatus extends List {
     createdAt: string,
     updatedAt: string,
     public readonly completed: boolean,
+    public readonly itemCount: number,
   ) {
     super(id, name, createdAt, updatedAt);
   }

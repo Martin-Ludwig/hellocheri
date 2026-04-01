@@ -15,6 +15,9 @@ type StoredList = {
   name: string;
   createdAt: string;
   updatedAt: string;
+  // Derived fields cached on the record, recomputed after every item write
+  completed: boolean;
+  itemCount: number;
 };
 
 type StoredListItem = {
@@ -68,43 +71,48 @@ export class ListsLocalStore implements ListsStore {
     });
   }
 
-  private computeCompleted(items: StoredListItem[]): boolean {
-    if (items.length === 0) return false;
-    return items.every((item) => item.status === ItemStatus.Completed);
+  // Recomputes completed and itemCount from the current items and stores them on the list record.
+  // Must be called within a readwrite transaction that includes both object stores.
+  private async recomputeAndStoreDerivedFields(
+    listId: string,
+    transaction: IDBTransaction,
+  ): Promise<void> {
+    const storedList = await this.wrapRequest<StoredList | undefined>(
+      transaction.objectStore(LISTS_STORE_NAME).get(listId),
+    );
+    if (storedList === undefined) return;
+
+    const items = await this.wrapRequest<StoredListItem[]>(
+      transaction.objectStore(LIST_ITEMS_STORE_NAME).index(LIST_ID_INDEX_NAME).getAll(listId),
+    );
+
+    const itemCount = items.length;
+    const completed = itemCount > 0 && items.every((item) => item.status === ItemStatus.Completed);
+
+    await this.wrapRequest(
+      transaction.objectStore(LISTS_STORE_NAME).put({ ...storedList, completed, itemCount }),
+    );
   }
 
   async getLists(): Promise<ListWithStatus[]> {
     const database = await this.openDatabase();
-    const transaction = database.transaction([LISTS_STORE_NAME, LIST_ITEMS_STORE_NAME], "readonly");
+    const transaction = database.transaction([LISTS_STORE_NAME], "readonly");
 
-    // Start both reads in parallel — no dependency between them
-    const allListsPromise = this.wrapRequest<StoredList[]>(
+    const allLists = await this.wrapRequest<StoredList[]>(
       transaction.objectStore(LISTS_STORE_NAME).getAll(),
     );
-    const allItemsPromise = this.wrapRequest<StoredListItem[]>(
-      transaction.objectStore(LIST_ITEMS_STORE_NAME).getAll(),
+
+    return allLists.map(
+      (storedList) =>
+        new ListWithStatus(
+          storedList.id,
+          storedList.name,
+          storedList.createdAt,
+          storedList.updatedAt,
+          storedList.completed ?? false,
+          storedList.itemCount ?? 0,
+        ),
     );
-
-    const [allLists, allItems] = await Promise.all([allListsPromise, allItemsPromise]);
-
-    const itemsByListId = new Map<string, StoredListItem[]>();
-    for (const item of allItems) {
-      const existing = itemsByListId.get(item.listId) ?? [];
-      existing.push(item);
-      itemsByListId.set(item.listId, existing);
-    }
-
-    return allLists.map((storedList) => {
-      const items = itemsByListId.get(storedList.id) ?? [];
-      const completed = this.computeCompleted(items);
-      return new ListWithStatus(
-        storedList.id,
-        storedList.name,
-        storedList.createdAt,
-        storedList.updatedAt,
-        completed,
-      );
-    });
   }
 
   async createList(input: CreateListInput): Promise<List> {
@@ -117,6 +125,8 @@ export class ListsLocalStore implements ListsStore {
       name: input.name,
       createdAt: now,
       updatedAt: now,
+      completed: false,
+      itemCount: 0,
     };
 
     await this.wrapRequest(transaction.objectStore(LISTS_STORE_NAME).add(storedList));
@@ -125,35 +135,28 @@ export class ListsLocalStore implements ListsStore {
 
   async getList(listId: string): Promise<ListWithStatus> {
     const database = await this.openDatabase();
-    const transaction = database.transaction([LISTS_STORE_NAME, LIST_ITEMS_STORE_NAME], "readonly");
+    const transaction = database.transaction([LISTS_STORE_NAME], "readonly");
 
-    // Start both reads in parallel — no dependency between them
-    const listPromise = this.wrapRequest<StoredList | undefined>(
+    const storedList = await this.wrapRequest<StoredList | undefined>(
       transaction.objectStore(LISTS_STORE_NAME).get(listId),
     );
-    const itemsPromise = this.wrapRequest<StoredListItem[]>(
-      transaction.objectStore(LIST_ITEMS_STORE_NAME).index(LIST_ID_INDEX_NAME).getAll(listId),
-    );
-
-    const [storedList, items] = await Promise.all([listPromise, itemsPromise]);
 
     if (storedList === undefined) throw new Error(`List not found: ${listId}`);
 
-    const completed = this.computeCompleted(items);
     return new ListWithStatus(
       storedList.id,
       storedList.name,
       storedList.createdAt,
       storedList.updatedAt,
-      completed,
+      storedList.completed ?? false,
+      storedList.itemCount ?? 0,
     );
   }
 
   async updateList(listId: string, input: UpdateListInput): Promise<ListWithStatus> {
     const database = await this.openDatabase();
-
-    const writeTransaction = database.transaction([LISTS_STORE_NAME], "readwrite");
-    const listsStore = writeTransaction.objectStore(LISTS_STORE_NAME);
+    const transaction = database.transaction([LISTS_STORE_NAME], "readwrite");
+    const listsStore = transaction.objectStore(LISTS_STORE_NAME);
 
     const storedList = await this.wrapRequest<StoredList | undefined>(listsStore.get(listId));
     if (storedList === undefined) throw new Error(`List not found: ${listId}`);
@@ -166,20 +169,13 @@ export class ListsLocalStore implements ListsStore {
 
     await this.wrapRequest(listsStore.put(updatedList));
 
-    // Use a separate transaction to fetch items for the completed computation,
-    // since the write transaction has already committed at this point
-    const readTransaction = database.transaction([LIST_ITEMS_STORE_NAME], "readonly");
-    const items = await this.wrapRequest<StoredListItem[]>(
-      readTransaction.objectStore(LIST_ITEMS_STORE_NAME).index(LIST_ID_INDEX_NAME).getAll(listId),
-    );
-
-    const completed = this.computeCompleted(items);
     return new ListWithStatus(
       updatedList.id,
       updatedList.name,
       updatedList.createdAt,
       updatedList.updatedAt,
-      completed,
+      updatedList.completed ?? false,
+      updatedList.itemCount ?? 0,
     );
   }
 
@@ -218,6 +214,8 @@ export class ListsLocalStore implements ListsStore {
     };
 
     await this.wrapRequest(listItemsStore.add(storedItem));
+    await this.recomputeAndStoreDerivedFields(listId, transaction);
+
     return new ListItem(
       storedItem.id,
       storedItem.listId,
@@ -231,7 +229,7 @@ export class ListsLocalStore implements ListsStore {
 
   async updateListItem(listId: string, itemId: string, input: UpdateListItemInput): Promise<ListItem> {
     const database = await this.openDatabase();
-    const transaction = database.transaction([LIST_ITEMS_STORE_NAME], "readwrite");
+    const transaction = database.transaction([LISTS_STORE_NAME, LIST_ITEMS_STORE_NAME], "readwrite");
     const listItemsStore = transaction.objectStore(LIST_ITEMS_STORE_NAME);
 
     const storedItem = await this.wrapRequest<StoredListItem | undefined>(listItemsStore.get(itemId));
@@ -248,6 +246,8 @@ export class ListsLocalStore implements ListsStore {
     };
 
     await this.wrapRequest(listItemsStore.put(updatedItem));
+    await this.recomputeAndStoreDerivedFields(listId, transaction);
+
     return new ListItem(
       updatedItem.id,
       updatedItem.listId,
@@ -261,7 +261,7 @@ export class ListsLocalStore implements ListsStore {
 
   async deleteListItem(listId: string, itemId: string): Promise<void> {
     const database = await this.openDatabase();
-    const transaction = database.transaction([LIST_ITEMS_STORE_NAME], "readwrite");
+    const transaction = database.transaction([LISTS_STORE_NAME, LIST_ITEMS_STORE_NAME], "readwrite");
     const listItemsStore = transaction.objectStore(LIST_ITEMS_STORE_NAME);
 
     const storedItem = await this.wrapRequest<StoredListItem | undefined>(listItemsStore.get(itemId));
@@ -270,5 +270,6 @@ export class ListsLocalStore implements ListsStore {
     }
 
     await this.wrapRequest(listItemsStore.delete(itemId));
+    await this.recomputeAndStoreDerivedFields(listId, transaction);
   }
 }

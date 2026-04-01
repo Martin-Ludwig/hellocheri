@@ -8,7 +8,7 @@ import { ListCard } from "@frontend/components/ListCard";
 const now = "2026-03-12T00:00:00.000Z";
 
 function makeList(name: string, completed: boolean): ListWithStatus {
-  return new ListWithStatus(crypto.randomUUID(), name, now, now, completed);
+  return new ListWithStatus(crypto.randomUUID(), name, now, now, completed, 0);
 }
 
 function renderWithRouter(ui: React.ReactElement) {

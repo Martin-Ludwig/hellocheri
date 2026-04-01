@@ -71,6 +71,50 @@ describe("ListsLocalStore", () => {
     expect(result[0]?.completed).toBe(false);
   });
 
+  test("getLists returns itemCount 0 for an empty list", async () => {
+    await store.createList(new CreateListInput("Empty"));
+
+    const result = await store.getLists();
+
+    expect(result[0]?.itemCount).toBe(0);
+  });
+
+  test("getLists returns itemCount matching the number of items in the list", async () => {
+    const list = await store.createList(new CreateListInput("Groceries"));
+    await store.createListItem(list.id, new CreateListItemInput(list.id, "Milk", 0));
+    await store.createListItem(list.id, new CreateListItemInput(list.id, "Eggs", 1));
+
+    const result = await store.getLists();
+
+    expect(result[0]?.itemCount).toBe(2);
+  });
+
+  test("getLists decrements itemCount after an item is deleted", async () => {
+    const list = await store.createList(new CreateListInput("Groceries"));
+    const item = await store.createListItem(list.id, new CreateListItemInput(list.id, "Milk", 0));
+    await store.createListItem(list.id, new CreateListItemInput(list.id, "Eggs", 1));
+
+    await store.deleteListItem(list.id, item.id);
+
+    const result = await store.getLists();
+
+    expect(result[0]?.itemCount).toBe(1);
+  });
+
+  test("getLists keeps itemCount isolated per list", async () => {
+    const list1 = await store.createList(new CreateListInput("List 1"));
+    const list2 = await store.createList(new CreateListInput("List 2"));
+    await store.createListItem(list1.id, new CreateListItemInput(list1.id, "Item A", 0));
+    await store.createListItem(list1.id, new CreateListItemInput(list1.id, "Item B", 1));
+    await store.createListItem(list2.id, new CreateListItemInput(list2.id, "Item C", 0));
+
+    const result = await store.getLists();
+    const counts = new Map(result.map((list) => [list.name, list.itemCount]));
+
+    expect(counts.get("List 1")).toBe(2);
+    expect(counts.get("List 2")).toBe(1);
+  });
+
   // --- createList ---
 
   test("createList returns a List with a generated id and timestamps", async () => {
@@ -103,6 +147,17 @@ describe("ListsLocalStore", () => {
     expect(result.id).toBe(list.id);
     expect(result.name).toBe("Work");
     expect(result.completed).toBe(false);
+    expect(result.itemCount).toBe(0);
+  });
+
+  test("getList returns correct itemCount after items are added", async () => {
+    const list = await store.createList(new CreateListInput("Work"));
+    await store.createListItem(list.id, new CreateListItemInput(list.id, "Task A", 0));
+    await store.createListItem(list.id, new CreateListItemInput(list.id, "Task B", 1));
+
+    const result = await store.getList(list.id);
+
+    expect(result.itemCount).toBe(2);
   });
 
   test("getList throws when the list does not exist", async () => {
@@ -128,6 +183,17 @@ describe("ListsLocalStore", () => {
     const lists = await store.getLists();
 
     expect(lists[0]?.name).toBe("Renamed");
+  });
+
+  test("updateList preserves itemCount and completed on the returned ListWithStatus", async () => {
+    const list = await store.createList(new CreateListInput("My List"));
+    const item = await store.createListItem(list.id, new CreateListItemInput(list.id, "Task", 0));
+    await store.updateListItem(list.id, item.id, new UpdateListItemInput(undefined, ItemStatus.Completed));
+
+    const result = await store.updateList(list.id, new UpdateListInput("My Renamed List"));
+
+    expect(result.itemCount).toBe(1);
+    expect(result.completed).toBe(true);
   });
 
   // --- getListItems ---

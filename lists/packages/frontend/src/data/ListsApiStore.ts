@@ -18,6 +18,7 @@ type ListApiResponse = {
 
 type ListWithStatusApiResponse = ListApiResponse & {
   completed: boolean;
+  itemCount?: number;
 };
 
 type ListItemApiResponse = {
@@ -38,7 +39,7 @@ export class ListsApiStore implements ListsStore {
     if (!response.ok) throw new Error("Failed to fetch lists");
     const data = (await response.json()) as ListWithStatusApiResponse[];
     return data.map(
-      (item) => new ListWithStatus(item.id, item.name, item.createdAt, item.updatedAt, item.completed),
+      (item) => new ListWithStatus(item.id, item.name, item.createdAt, item.updatedAt, item.completed, item.itemCount ?? 0),
     );
   }
 

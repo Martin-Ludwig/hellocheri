@@ -22,7 +22,7 @@ describe("ListsApiStore", () => {
 
   test("getLists fetches /lists and returns ListWithStatus[]", async () => {
     const fetchSpy = makeFetchSpy([
-      { id: "1", name: "Groceries", createdAt: "2024-01-01", updatedAt: "2024-01-01", completed: false },
+      { id: "1", name: "Groceries", createdAt: "2024-01-01", updatedAt: "2024-01-01", completed: false, itemCount: 3 },
     ]);
 
     const result = await store.getLists();
@@ -32,6 +32,17 @@ describe("ListsApiStore", () => {
     expect(result[0]).toBeInstanceOf(ListWithStatus);
     expect(result[0]?.name).toBe("Groceries");
     expect(result[0]?.completed).toBe(false);
+    expect(result[0]?.itemCount).toBe(3);
+  });
+
+  test("getLists defaults itemCount to 0 when absent from response", async () => {
+    makeFetchSpy([
+      { id: "1", name: "Groceries", createdAt: "2024-01-01", updatedAt: "2024-01-01", completed: false },
+    ]);
+
+    const result = await store.getLists();
+
+    expect(result[0]?.itemCount).toBe(0);
   });
 
   test("createList posts to /lists and returns List", async () => {
@@ -55,6 +66,7 @@ describe("ListsApiStore", () => {
       createdAt: "2024-01-01",
       updatedAt: "2024-01-01",
       completed: true,
+      itemCount: 5,
     });
 
     const result = await store.getList("3");
@@ -62,6 +74,7 @@ describe("ListsApiStore", () => {
     expect(fetchSpy).toHaveBeenCalledWith(`${BASE_URL}/lists/3`);
     expect(result).toBeInstanceOf(ListWithStatus);
     expect(result.completed).toBe(true);
+    expect(result.itemCount).toBe(5);
   });
 
   test("updateList patches /lists/:id and returns ListWithStatus", async () => {
@@ -71,6 +84,7 @@ describe("ListsApiStore", () => {
       createdAt: "2024-01-01",
       updatedAt: "2024-01-02",
       completed: false,
+      itemCount: 2,
     });
 
     const result = await store.updateList("3", new UpdateListInput("Work Updated"));
@@ -82,6 +96,7 @@ describe("ListsApiStore", () => {
     });
     expect(result).toBeInstanceOf(ListWithStatus);
     expect(result.name).toBe("Work Updated");
+    expect(result.itemCount).toBe(2);
   });
 
   test("getListItems fetches /lists/:id/items and returns ListItem[]", async () => {

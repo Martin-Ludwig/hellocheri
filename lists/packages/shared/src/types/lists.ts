@@ -53,6 +53,7 @@ export type ListRow = {
 
 export type ListWithStatusRow = ListRow & {
   completed: number;
+  item_count: number;
 };
 
 export type ListItemRow = {

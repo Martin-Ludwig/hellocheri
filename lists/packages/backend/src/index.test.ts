@@ -33,6 +33,36 @@ describe("GET /lists", () => {
     });
   });
 
+  test("returns itemCount of 0 for a list with no items", async () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: id, $name: "Empty", $now: now });
+
+    const response = await app.handle(new Request("http://localhost/lists"));
+    const body = await response.json();
+    expect(body[0].itemCount).toBe(0);
+  });
+
+  test("returns itemCount equal to the number of items in the list", async () => {
+    const listId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: listId, $name: "With Items", $now: now });
+    db.query(
+      "INSERT INTO list_items (id, list_id, text, status, position, created_at, updated_at) VALUES ($id, $listId, $text, 0, 0, $now, $now)",
+    ).run({ $id: crypto.randomUUID(), $listId: listId, $text: "One", $now: now });
+    db.query(
+      "INSERT INTO list_items (id, list_id, text, status, position, created_at, updated_at) VALUES ($id, $listId, $text, 0, 1, $now, $now)",
+    ).run({ $id: crypto.randomUUID(), $listId: listId, $text: "Two", $now: now });
+
+    const response = await app.handle(new Request("http://localhost/lists"));
+    const body = await response.json();
+    expect(body[0].itemCount).toBe(2);
+  });
+
   test("returns lists ordered by created_at descending", async () => {
     const now = new Date();
     const earlier = new Date(now.getTime() - 1000).toISOString();
@@ -66,6 +96,23 @@ describe("GET /lists/:id", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body).toMatchObject({ id, name: "Shopping", completed: false });
+  });
+
+  test("returns itemCount for a specific list", async () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.query(
+      "INSERT INTO lists (id, name, created_at, updated_at) VALUES ($id, $name, $now, $now)",
+    ).run({ $id: id, $name: "Shopping", $now: now });
+    db.query(
+      "INSERT INTO list_items (id, list_id, text, status, position, created_at, updated_at) VALUES ($id, $listId, $text, 0, 0, $now, $now)",
+    ).run({ $id: crypto.randomUUID(), $listId: id, $text: "Apples", $now: now });
+
+    const response = await app.handle(
+      new Request(`http://localhost/lists/${id}`),
+    );
+    const body = await response.json();
+    expect(body.itemCount).toBe(1);
   });
 
   test("returns 404 for an unknown id", async () => {

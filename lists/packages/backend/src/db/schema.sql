@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_list_items_list_id ON list_items(list_id);
 CREATE VIEW IF NOT EXISTS lists_with_status AS
 SELECT
   list.*,
+  COUNT(item.id) AS item_count,
   CASE
     WHEN COUNT(item.id) = 0 THEN 0         -- empty list = not completed
     WHEN SUM(item.status != 1) = 0 THEN 1  -- all items have status "completed" (id=1)

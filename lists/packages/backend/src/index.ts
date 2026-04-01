@@ -15,6 +15,7 @@ const listWithStatusSchema = t.Object({
   createdAt: t.String(),
   updatedAt: t.String(),
   completed: t.Boolean(),
+  itemCount: t.Number(),
 });
 
 const listItemSchema = t.Object({
@@ -35,7 +36,7 @@ const app = new Elysia()
     () => {
       const rows = db
         .query<ListWithStatusRow, []>(
-          "SELECT id, name, created_at, updated_at, completed FROM lists_with_status ORDER BY created_at DESC",
+          "SELECT id, name, created_at, updated_at, completed, item_count FROM lists_with_status ORDER BY created_at DESC",
         )
         .all();
 
@@ -45,6 +46,7 @@ const app = new Elysia()
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         completed: row.completed === 1,
+        itemCount: row.item_count,
       }));
     },
     { response: t.Array(listWithStatusSchema) },
@@ -54,7 +56,7 @@ const app = new Elysia()
     ({ params, set }) => {
       const row = db
         .query<ListWithStatusRow, [string]>(
-          "SELECT id, name, created_at, updated_at, completed FROM lists_with_status WHERE id = ?",
+          "SELECT id, name, created_at, updated_at, completed, item_count FROM lists_with_status WHERE id = ?",
         )
         .get(params.id);
 
@@ -69,6 +71,7 @@ const app = new Elysia()
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         completed: row.completed === 1,
+        itemCount: row.item_count,
       };
     },
     { response: { 200: listWithStatusSchema, 404: notFoundSchema } },
@@ -242,7 +245,7 @@ const app = new Elysia()
 
       const updated = db
         .query<ListWithStatusRow, [string]>(
-          "SELECT id, name, created_at, updated_at, completed FROM lists_with_status WHERE id = ?",
+          "SELECT id, name, created_at, updated_at, completed, item_count FROM lists_with_status WHERE id = ?",
         )
         .get(params.id)!;
 
@@ -252,6 +255,7 @@ const app = new Elysia()
         createdAt: updated.created_at,
         updatedAt: updated.updated_at,
         completed: updated.completed === 1,
+        itemCount: updated.item_count,
       };
     },
     {

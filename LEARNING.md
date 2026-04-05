@@ -74,6 +74,14 @@ Safer options if this ever matters: collapse into a single `INSERT INTO list_ite
 - IndexedDB transactions auto-commit at macrotask boundaries, not microtask boundaries — awaiting an `IDBRequest` resolved from its own `onsuccess` handler keeps the transaction open, because the microtask runs before the runtime checks for auto-commit
 - For operations that need to read data from two object stores in one transaction, start both requests synchronously (before any `await`) and then `await Promise.all([...])` — this runs them in parallel rather than sequentially
 
+## Offline-first store pattern
+
+- Stale-while-revalidate: return from local store immediately, then kick off a background API fetch — assign `this.backgroundSync = this.refreshFromApi()` so tests can `await store.backgroundSync` to assert side effects without timers or polling
+- Last-write-wins on `updatedAt`: compare ISO strings lexicographically (valid because ISO 8601 is sortable as a string) — only apply the remote value if `api.updatedAt > local.updatedAt`
+- Background tasks must catch and swallow all errors — the caller should never see a rejection from a fire-and-forget sync
+- Known limitation: `ListsLocalStore` always generates its own UUID for new records — background creates cannot reconcile local UUIDs with server-assigned UUIDs without a specific-ID upsert method on the local store; new-from-server records are skipped during background refresh
+- Test the background sync by awaiting `store.backgroundSync` after each call, not with `setTimeout` or `Promise.resolve()` chains
+
 ## LocalStorageManager (framework/)
 
 - Bun's test environment has no `localStorage` — assign a mock to `globalThis.localStorage` in `beforeEach`

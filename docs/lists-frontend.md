@@ -23,6 +23,11 @@ src/
 ├── index.css                   # Tailwind v4 entry (@import "tailwindcss")
 ├── index.tsx                   # React root — renders <App /> into #root
 ├── App.tsx                     # Root component — BrowserRouter + Routes
+├── data/
+│   ├── ListsStore.ts           # ListsStore interface — shared contract for all store implementations
+│   ├── ListsApiStore.ts        # REST API implementation — fetches from backend
+│   ├── ListsLocalStore.ts      # IndexedDB implementation — offline-capable local cache
+│   └── ListsOfflineFirstStore.ts  # Offline-first composition — stale-while-revalidate reads, local-first writes, last-write-wins conflict resolution
 ├── pages/
 │   ├── ListIndexPage.tsx       # Index page: title, list overview, create button
 │   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete; contenteditable title rename

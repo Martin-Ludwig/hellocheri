@@ -30,8 +30,11 @@ export function ListIndexPage({ store }: ListIndexPageProps) {
     setCreating(true);
     try {
       const newList = await store.createList(new CreateListInput(DEFAULT_LIST_NAME));
-      const newListWithStatus = new ListWithStatus(newList.id, newList.name, newList.createdAt, newList.updatedAt, false, 0);
+      const { id, name, createdAt, updatedAt } = newList;
+      const newListWithStatus = new ListWithStatus(id, name, createdAt, updatedAt, false, 0);
       setPageState({ ...pageState, lists: [...pageState.lists, newListWithStatus] });
+    } catch {
+      setPageState({ status: "error", message: "Failed to create list." });
     } finally {
       setCreating(false);
     }

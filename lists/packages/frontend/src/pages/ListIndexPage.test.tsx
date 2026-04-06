@@ -94,6 +94,20 @@ describe("ListIndexPage", () => {
     });
   });
 
+  test("shows error message when createList fails", async () => {
+    mockStore = makeMockStore({
+      createList: mock(() => Promise.reject(new Error("server error"))),
+    });
+
+    render(<MemoryRouter><ListIndexPage store={mockStore} /></MemoryRouter>);
+    await waitFor(() => screen.getByRole("button", { name: "New List" }));
+    fireEvent.click(screen.getByRole("button", { name: "New List" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to create list.")).toBeDefined();
+    });
+  });
+
   test("appends new list to the page after createList without reloading", async () => {
     const getListsMock = mock(() => Promise.resolve([]));
     const createListMock = mock(() =>

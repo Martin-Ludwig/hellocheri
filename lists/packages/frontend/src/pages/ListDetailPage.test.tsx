@@ -149,6 +149,24 @@ describe("ListDetailPage", () => {
     });
   });
 
+  test("reverts title when updateList fails", async () => {
+    mockStore = makeMockStore({
+      updateList: mock(() => Promise.reject(new Error("network error"))),
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
+
+    const heading = screen.getByRole("heading") as HTMLElement;
+    fireEvent.focus(heading);
+    heading.textContent = "Updated";
+    fireEvent.blur(heading);
+
+    await waitFor(() => {
+      expect(heading.textContent).toBe("Groceries");
+    });
+  });
+
   test("blurring the title with the same name skips updateList", async () => {
     const updateListMock = mock(() => Promise.resolve(mockList));
     mockStore = makeMockStore({ updateList: updateListMock });
@@ -256,5 +274,58 @@ describe("ListDetailPage", () => {
     });
 
     await waitFor(() => expect(screen.queryByText("Milk")).toBeNull());
+  });
+
+  test("reverts toggle when updateListItem fails", async () => {
+    mockStore = makeMockStore({
+      updateListItem: mock(() => Promise.reject(new Error("network error"))),
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByText("Milk")).toBeDefined());
+
+    const checkboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+    fireEvent.click(checkboxes[0]);
+
+    // Optimistic update applied immediately
+    await waitFor(() => expect(checkboxes[0].checked).toBe(true));
+
+    // Reverted after store rejects
+    await waitFor(() => expect(checkboxes[0].checked).toBe(false));
+  });
+
+  test("does not add item to UI when createListItem fails", async () => {
+    mockStore = makeMockStore({
+      createListItem: mock(() => Promise.reject(new Error("network error"))),
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
+
+    const input = screen.getByPlaceholderText("Add item...") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Butter" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(screen.queryByText("Butter")).toBeNull());
+    // Input value is preserved so the user can retry
+    expect(input.value).toBe("Butter");
+  });
+
+  test("reverts delete when deleteListItem fails", async () => {
+    mockStore = makeMockStore({
+      deleteListItem: mock(() => Promise.reject(new Error("network error"))),
+    });
+
+    renderDetailPage();
+    await waitFor(() => expect(screen.getByText("Milk")).toBeDefined());
+
+    const deleteButtons = screen.getAllByRole("button", { name: "Delete" });
+    fireEvent.click(deleteButtons[0]);
+
+    // Optimistic removal applied immediately
+    await waitFor(() => expect(screen.queryByText("Milk")).toBeNull());
+
+    // Reverted after store rejects
+    await waitFor(() => expect(screen.getByText("Milk")).toBeDefined());
   });
 });

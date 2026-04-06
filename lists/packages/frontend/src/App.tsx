@@ -16,7 +16,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ListIndexPage />} />
+        <Route path="/" element={<ListIndexPage store={store} />} />
         <Route path="/lists/:id" element={<ListDetailPage store={store} />} />
       </Routes>
     </BrowserRouter>

@@ -1,49 +1,32 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ListWithStatus } from "@lists/shared";
+import { ListWithStatus, CreateListInput } from "@lists/shared";
 import { ListCard } from "@frontend/components/ListCard";
+import type { ListsStore } from "@frontend/data/ListsStore";
 
-const API_BASE = "http://localhost:3001";
 const DEFAULT_LIST_NAME = "New List";
 
-type FetchState =
+type PageState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "success"; lists: ListWithStatus[] };
 
-export function ListIndexPage() {
-  const [fetchState, setFetchState] = useState<FetchState>({ status: "loading" });
+interface ListIndexPageProps {
+  store: ListsStore;
+}
+
+export function ListIndexPage({ store }: ListIndexPageProps) {
+  const [pageState, setPageState] = useState<PageState>({ status: "loading" });
   const [creating, setCreating] = useState(false);
 
   const loadLists = useCallback(async () => {
-    setFetchState({ status: "loading" });
+    setPageState({ status: "loading" });
     try {
-      const response = await fetch(`${API_BASE}/lists`);
-      if (!response.ok) {
-        setFetchState({ status: "error", message: "Failed to load lists." });
-        return;
-      }
-      const data = (await response.json()) as Array<{
-        id: string;
-        name: string;
-        createdAt: string;
-        updatedAt: string;
-        completed: boolean;
-      }>;
-      const lists: ListWithStatus[] = data.map(
-        (item) =>
-          new ListWithStatus(
-            item.id,
-            item.name,
-            item.createdAt,
-            item.updatedAt,
-            item.completed,
-          ),
-      );
-      setFetchState({ status: "success", lists });
+      const lists = await store.getLists();
+      setPageState({ status: "success", lists });
     } catch {
-      setFetchState({ status: "error", message: "Failed to load lists." });
+      setPageState({ status: "error", message: "Failed to load lists." });
     }
-  }, []);
+  }, [store]);
 
   useEffect(() => {
     void loadLists();
@@ -52,11 +35,7 @@ export function ListIndexPage() {
   async function handleNewList() {
     setCreating(true);
     try {
-      await fetch(`${API_BASE}/lists`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: DEFAULT_LIST_NAME }),
-      });
+      await store.createList(new CreateListInput(DEFAULT_LIST_NAME));
       void loadLists();
     } finally {
       setCreating(false);
@@ -77,23 +56,23 @@ export function ListIndexPage() {
         </button>
       </div>
 
-      {fetchState.status === "loading" && (
+      {pageState.status === "loading" && (
         <p className="text-sm text-gray-500">Loading...</p>
       )}
 
-      {fetchState.status === "error" && (
-        <p className="text-sm text-red-600">{fetchState.message}</p>
+      {pageState.status === "error" && (
+        <p className="text-sm text-red-600">{pageState.message}</p>
       )}
 
-      {fetchState.status === "success" && fetchState.lists.length === 0 && (
+      {pageState.status === "success" && pageState.lists.length === 0 && (
         <p className="text-sm text-gray-500">
           No lists yet. Create your first one.
         </p>
       )}
 
-      {fetchState.status === "success" && fetchState.lists.length > 0 && (
+      {pageState.status === "success" && pageState.lists.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {fetchState.lists.map((list) => (
+          {pageState.lists.map((list) => (
             <li key={list.id}>
               <ListCard list={list} />
             </li>

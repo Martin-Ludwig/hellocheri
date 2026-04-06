@@ -71,33 +71,47 @@ export function ListDetailPage({ store }: ListDetailPageProps) {
       return;
     }
 
-    await store.updateList(listId, new UpdateListInput(newName));
-    setPageState({ ...pageState, listName: newName });
+    try {
+      await store.updateList(listId, new UpdateListInput(newName));
+      setPageState({ ...pageState, listName: newName });
+    } catch {
+      titleRef.current.textContent = pageState.listName;
+    }
   }
 
   async function handleToggleItem(item: ListItem) {
     if (!listId || pageState.status !== "success") return;
     const newStatus = item.isCompleted() ? ItemStatus.Default : ItemStatus.Completed;
-    const updatedItem = await store.updateListItem(listId, item.id, new UpdateListItemInput(undefined, newStatus));
+    const optimisticItem = new ListItem(item.id, item.listId, item.text, newStatus, item.position, item.createdAt, item.updatedAt);
+    const oldItems = pageState.items;
     setPageState({
       ...pageState,
       items: pageState.items.map((existingItem) =>
-        existingItem.id === item.id ? updatedItem : existingItem,
+        existingItem.id === item.id ? optimisticItem : existingItem,
       ),
     });
+    try {
+      await store.updateListItem(listId, item.id, new UpdateListItemInput(undefined, newStatus));
+    } catch {
+      setPageState({ ...pageState, items: oldItems });
+    }
   }
 
   async function handleAddItem(): Promise<void> {
     const text = newItemText.trim();
     if (!text || !listId || pageState.status !== "success") return;
 
-    const newItem = await store.createListItem(
-      listId,
-      new CreateListItemInput(listId, text, pageState.items.length + 1),
-    );
-    setPageState({ ...pageState, items: [...pageState.items, newItem] });
-    setNewItemText("");
-    addItemInputRef.current?.focus();
+    try {
+      const newItem = await store.createListItem(
+        listId,
+        new CreateListItemInput(listId, text, pageState.items.length + 1),
+      );
+      setPageState({ ...pageState, items: [...pageState.items, newItem] });
+      setNewItemText("");
+      addItemInputRef.current?.focus();
+    } catch {
+      // State was not updated — nothing to revert
+    }
   }
 
   function handleAddItemKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -112,11 +126,16 @@ export function ListDetailPage({ store }: ListDetailPageProps) {
 
   async function handleDeleteItem(itemId: string) {
     if (!listId || pageState.status !== "success") return;
-    await store.deleteListItem(listId, itemId);
+    const oldItems = pageState.items;
     setPageState({
       ...pageState,
       items: pageState.items.filter((item) => item.id !== itemId),
     });
+    try {
+      await store.deleteListItem(listId, itemId);
+    } catch {
+      setPageState({ ...pageState, items: oldItems });
+    }
   }
 
   return (

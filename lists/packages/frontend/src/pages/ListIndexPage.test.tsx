@@ -93,4 +93,21 @@ describe("ListIndexPage", () => {
       expect(createListMock.mock.calls[0]).toEqual([new CreateListInput("New List")]);
     });
   });
+
+  test("appends new list to the page after createList without reloading", async () => {
+    const getListsMock = mock(() => Promise.resolve([]));
+    const createListMock = mock(() =>
+      Promise.resolve(new List("new-id", "My New List", now, now)),
+    );
+    mockStore = makeMockStore({ getLists: getListsMock, createList: createListMock });
+
+    render(<MemoryRouter><ListIndexPage store={mockStore} /></MemoryRouter>);
+    await waitFor(() => screen.getByRole("button", { name: "New List" }));
+    fireEvent.click(screen.getByRole("button", { name: "New List" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("My New List")).toBeDefined();
+    });
+    expect(getListsMock.mock.calls.length).toBe(1);
+  });
 });

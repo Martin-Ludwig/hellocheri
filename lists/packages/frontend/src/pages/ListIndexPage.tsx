@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ListWithStatus, CreateListInput } from "@lists/shared";
 import { ListCard } from "@frontend/components/ListCard";
 import type { ListsStore } from "@frontend/data/ListsStore";
@@ -18,25 +18,20 @@ export function ListIndexPage({ store }: ListIndexPageProps) {
   const [pageState, setPageState] = useState<PageState>({ status: "loading" });
   const [creating, setCreating] = useState(false);
 
-  const loadLists = useCallback(async () => {
+  useEffect(() => {
     setPageState({ status: "loading" });
-    try {
-      const lists = await store.getLists();
-      setPageState({ status: "success", lists });
-    } catch {
-      setPageState({ status: "error", message: "Failed to load lists." });
-    }
+    void store.getLists()
+      .then((lists) => setPageState({ status: "success", lists }))
+      .catch(() => setPageState({ status: "error", message: "Failed to load lists." }));
   }, [store]);
 
-  useEffect(() => {
-    void loadLists();
-  }, [loadLists]);
-
   async function handleNewList() {
+    if (pageState.status !== "success") return;
     setCreating(true);
     try {
-      await store.createList(new CreateListInput(DEFAULT_LIST_NAME));
-      void loadLists();
+      const newList = await store.createList(new CreateListInput(DEFAULT_LIST_NAME));
+      const newListWithStatus = new ListWithStatus(newList.id, newList.name, newList.createdAt, newList.updatedAt, false, 0);
+      setPageState({ ...pageState, lists: [...pageState.lists, newListWithStatus] });
     } finally {
       setCreating(false);
     }

@@ -30,7 +30,7 @@ src/
 │   └── ListsOfflineFirstStore.ts  # Offline-first composition — stale-while-revalidate reads, local-first writes, last-write-wins conflict resolution
 ├── pages/
 │   ├── ListIndexPage.tsx       # Index page: title, list overview, create button
-│   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete; contenteditable title rename
+│   └── ListDetailPage.tsx      # Detail page: list items with toggle and delete; contenteditable title rename; accepts store: ListsStore prop
 └── components/
     ├── ListCard.tsx             # Single list card: name + completion badge, navigates on click
     └── CreateListModal.tsx      # Modal to create a new list

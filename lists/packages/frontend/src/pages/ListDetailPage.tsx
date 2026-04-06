@@ -1,88 +1,50 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ListItem, ItemStatus } from "@lists/shared";
+import { ListItem, ItemStatus, UpdateListInput, UpdateListItemInput, CreateListItemInput } from "@lists/shared";
+import type { ListsStore } from "@frontend/data/ListsStore";
 
-const API_BASE = "http://localhost:3001";
-
-type FetchState =
+type PageState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "success"; listName: string; items: ListItem[] };
 
-export function ListDetailPage() {
+interface ListDetailPageProps {
+  store: ListsStore;
+}
+
+export function ListDetailPage({ store }: ListDetailPageProps) {
   const { id: listId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [fetchState, setFetchState] = useState<FetchState>({ status: "loading" });
+  const [pageState, setPageState] = useState<PageState>({ status: "loading" });
   const [newItemText, setNewItemText] = useState("");
   const titleRef = useRef<HTMLHeadingElement>(null);
   const addItemInputRef = useRef<HTMLInputElement>(null);
   const nameBeforeEditRef = useRef<string>("");
 
-  const loadListAndItems = useCallback(async () => {
+  useEffect(() => {
     if (!listId) return;
-    setFetchState({ status: "loading" });
-    try {
-      const [listResponse, itemsResponse] = await Promise.all([
-        fetch(`${API_BASE}/lists/${listId}`),
-        fetch(`${API_BASE}/lists/${listId}/items`),
-      ]);
+    setPageState({ status: "loading" });
 
-      if (!listResponse.ok || !itemsResponse.ok) {
-        setFetchState({ status: "error", message: "Failed to load list." });
-        return;
-      }
-
-      const listData = (await listResponse.json()) as {
-        id: string;
-        name: string;
-        createdAt: string;
-        updatedAt: string;
-      };
-
-      const itemsData = (await itemsResponse.json()) as Array<{
-        id: string;
-        listId: string;
-        text: string;
-        status: number;
-        position: number;
-        createdAt: string;
-        updatedAt: string;
-      }>;
-
-      const items = itemsData.map(
-        (item) =>
-          new ListItem(
-            item.id,
-            item.listId,
-            item.text,
-            item.status,
-            item.position,
-            item.createdAt,
-            item.updatedAt,
-          ),
-      );
-
-      setFetchState({ status: "success", listName: listData.name, items });
-    } catch {
-      setFetchState({ status: "error", message: "Failed to load list." });
-    }
-  }, [listId]);
+    void Promise.all([store.getList(listId), store.getListItems(listId)])
+      .then(([list, items]) => {
+        setPageState({ status: "success", listName: list.name, items });
+      })
+      .catch(() => {
+        setPageState({ status: "error", message: "Failed to load list." });
+      });
+  }, [listId, store]);
 
   useEffect(() => {
-    void loadListAndItems();
-  }, [loadListAndItems]);
-
-  useEffect(() => {
-    if (fetchState.status === "success" && titleRef.current) {
-      if (titleRef.current.textContent !== fetchState.listName) {
-        titleRef.current.textContent = fetchState.listName;
+    if (pageState.status === "success" && titleRef.current) {
+      if (titleRef.current.textContent !== pageState.listName) {
+        titleRef.current.textContent = pageState.listName;
       }
     }
-  }, [fetchState]);
+  }, [pageState]);
 
   function handleTitleFocus() {
-    if (fetchState.status === "success") {
-      nameBeforeEditRef.current = fetchState.listName;
+    if (pageState.status === "success") {
+      nameBeforeEditRef.current = pageState.listName;
     }
   }
 
@@ -100,52 +62,42 @@ export function ListDetailPage() {
   }
 
   async function handleTitleBlur() {
-    if (!listId || !titleRef.current || fetchState.status !== "success") return;
+    if (!listId || !titleRef.current || pageState.status !== "success") return;
 
     const newName = titleRef.current.textContent?.trim() ?? "";
 
-    if (!newName || newName === fetchState.listName) {
-      titleRef.current.textContent = fetchState.listName;
+    if (!newName || newName === pageState.listName) {
+      titleRef.current.textContent = pageState.listName;
       return;
     }
 
-    await fetch(`${API_BASE}/lists/${listId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName }),
-    });
-
-    setFetchState({ ...fetchState, listName: newName });
+    await store.updateList(listId, new UpdateListInput(newName));
+    setPageState({ ...pageState, listName: newName });
   }
 
   async function handleToggleItem(item: ListItem) {
+    if (!listId || pageState.status !== "success") return;
     const newStatus = item.isCompleted() ? ItemStatus.Default : ItemStatus.Completed;
-    await fetch(`${API_BASE}/lists/${listId}/items/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+    const updatedItem = await store.updateListItem(listId, item.id, new UpdateListItemInput(undefined, newStatus));
+    setPageState({
+      ...pageState,
+      items: pageState.items.map((existingItem) =>
+        existingItem.id === item.id ? updatedItem : existingItem,
+      ),
     });
-    void loadListAndItems();
   }
 
   async function handleAddItem(): Promise<void> {
     const text = newItemText.trim();
-    if (!text || !listId) return;
+    if (!text || !listId || pageState.status !== "success") return;
 
-    const response = await fetch(`${API_BASE}/lists/${listId}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-
-    if (response.ok) {
-      // todo: show error feedback to user
-      
-
-      setNewItemText("");
-      addItemInputRef.current?.focus();
-      void loadListAndItems();
-    }
+    const newItem = await store.createListItem(
+      listId,
+      new CreateListItemInput(listId, text, pageState.items.length + 1),
+    );
+    setPageState({ ...pageState, items: [...pageState.items, newItem] });
+    setNewItemText("");
+    addItemInputRef.current?.focus();
   }
 
   function handleAddItemKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -159,10 +111,12 @@ export function ListDetailPage() {
   }
 
   async function handleDeleteItem(itemId: string) {
-    await fetch(`${API_BASE}/lists/${listId}/items/${itemId}`, {
-      method: "DELETE",
+    if (!listId || pageState.status !== "success") return;
+    await store.deleteListItem(listId, itemId);
+    setPageState({
+      ...pageState,
+      items: pageState.items.filter((item) => item.id !== itemId),
     });
-    void loadListAndItems();
   }
 
   return (
@@ -176,7 +130,7 @@ export function ListDetailPage() {
           Back
         </button>
 
-        {fetchState.status === "success" && (
+        {pageState.status === "success" && (
           <h1
             ref={titleRef}
             contentEditable="plaintext-only"
@@ -189,21 +143,21 @@ export function ListDetailPage() {
         )}
       </div>
 
-      {fetchState.status === "loading" && (
+      {pageState.status === "loading" && (
         <p className="text-sm text-gray-500">Loading...</p>
       )}
 
-      {fetchState.status === "error" && (
-        <p className="text-sm text-red-600">{fetchState.message}</p>
+      {pageState.status === "error" && (
+        <p className="text-sm text-red-600">{pageState.message}</p>
       )}
 
-      {fetchState.status === "success" && fetchState.items.length === 0 && (
+      {pageState.status === "success" && pageState.items.length === 0 && (
         <p className="text-sm text-gray-500">No items in this list.</p>
       )}
 
-      {fetchState.status === "success" && fetchState.items.length > 0 && (
+      {pageState.status === "success" && pageState.items.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {fetchState.items.map((item) => (
+          {pageState.items.map((item) => (
             <li
               key={item.id}
               className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm"
@@ -237,7 +191,7 @@ export function ListDetailPage() {
         </ul>
       )}
 
-      {fetchState.status === "success" && (
+      {pageState.status === "success" && (
         <input
           ref={addItemInputRef}
           type="text"

@@ -3,59 +3,68 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import React from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { ListDetailPage } from "@frontend/pages/ListDetailPage";
+import { ListWithStatus, ListItem, ItemStatus, UpdateListInput, UpdateListItemInput, CreateListItemInput } from "@lists/shared";
+import type { ListsStore } from "@frontend/data/ListsStore";
 
 const LIST_ID = "list-abc";
 const now = "2026-03-12T00:00:00.000Z";
 
-const mockList = { id: LIST_ID, name: "Groceries", createdAt: now, updatedAt: now };
+const mockList = new ListWithStatus(LIST_ID, "Groceries", now, now, false, 0);
 const mockItems = [
-  { id: "item-1", listId: LIST_ID, text: "Milk", status: 0, position: 1, createdAt: now, updatedAt: now },
-  { id: "item-2", listId: LIST_ID, text: "Eggs", status: 1, position: 2, createdAt: now, updatedAt: now },
+  new ListItem("item-1", LIST_ID, "Milk", ItemStatus.Default, 1, now, now),
+  new ListItem("item-2", LIST_ID, "Eggs", ItemStatus.Completed, 2, now, now),
 ];
+
+function makeMockStore(overrides: Partial<ListsStore> = {}): ListsStore {
+  return {
+    getLists: mock(() => Promise.resolve([])),
+    createList: mock(() => Promise.reject(new Error("not implemented"))),
+    getList: mock(() => Promise.resolve(mockList)),
+    updateList: mock(() => Promise.resolve(mockList)),
+    getListItems: mock(() => Promise.resolve(mockItems)),
+    createListItem: mock(() => Promise.reject(new Error("not implemented"))),
+    updateListItem: mock(() => Promise.reject(new Error("not implemented"))),
+    deleteListItem: mock(() => Promise.resolve()),
+    ...overrides,
+  };
+}
+
+let mockStore: ListsStore;
 
 function renderDetailPage(initialPath = `/lists/${LIST_ID}`) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/lists/:id" element={<ListDetailPage />} />
+        <Route path="/lists/:id" element={<ListDetailPage store={mockStore} />} />
         <Route path="/" element={<div>Index</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
-function makeFetchMock(listResponse: Response, itemsResponse: Response) {
-  let callCount = 0;
-  return mock(() => {
-    callCount++;
-    return Promise.resolve(callCount % 2 === 1 ? listResponse : itemsResponse);
-  });
-}
-
 beforeEach(() => {
-  globalThis.fetch = makeFetchMock(
-    new Response(JSON.stringify(mockList), { status: 200 }),
-    new Response(JSON.stringify(mockItems), { status: 200 }),
-  );
+  mockStore = makeMockStore();
 });
 
 describe("ListDetailPage", () => {
   test("shows loading state on mount", () => {
-    // Delay fetch so loading state is visible
-    globalThis.fetch = mock(() => new Promise(() => {}));
+    mockStore = makeMockStore({
+      getList: mock(() => new Promise(() => {})),
+      getListItems: mock(() => new Promise(() => {})),
+    });
     renderDetailPage();
     expect(screen.getByText("Loading...")).toBeDefined();
   });
 
-  test("shows error state when list fetch fails", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve(new Response(null, { status: 500 })),
-    );
+  test("shows error state when store rejects", async () => {
+    mockStore = makeMockStore({
+      getList: mock(() => Promise.reject(new Error("network error"))),
+    });
     renderDetailPage();
     await waitFor(() => expect(screen.getByText("Failed to load list.")).toBeDefined());
   });
 
-  test("renders list name and items after successful fetch", async () => {
+  test("renders list name and items after successful load", async () => {
     renderDetailPage();
     await waitFor(() => expect(screen.getByText("Groceries")).toBeDefined());
     expect(screen.getByText("Milk")).toBeDefined();
@@ -79,28 +88,19 @@ describe("ListDetailPage", () => {
   });
 
   test("shows empty state when no items returned", async () => {
-    globalThis.fetch = makeFetchMock(
-      new Response(JSON.stringify(mockList), { status: 200 }),
-      new Response(JSON.stringify([]), { status: 200 }),
-    );
+    mockStore = makeMockStore({
+      getListItems: mock(() => Promise.resolve([])),
+    });
     renderDetailPage();
     await waitFor(() =>
       expect(screen.getByText("No items in this list.")).toBeDefined(),
     );
   });
 
-  test("calls PATCH with toggled status and reloads on checkbox click", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (url.includes("/items") && init?.method === "PATCH") {
-        return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
-      }
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("calls updateListItem with toggled status and updates UI", async () => {
+    const completedMilk = new ListItem("item-1", LIST_ID, "Milk", ItemStatus.Completed, 1, now, now);
+    const updateListItemMock = mock(() => Promise.resolve(completedMilk));
+    mockStore = makeMockStore({ updateListItem: updateListItemMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByText("Milk")).toBeDefined());
@@ -109,11 +109,18 @@ describe("ListDetailPage", () => {
     fireEvent.click(checkboxes[0]);
 
     await waitFor(() => {
-      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH");
-      expect(patchCall).toBeDefined();
-      expect(patchCall?.url).toContain(`/lists/${LIST_ID}/items/item-1`);
-      const body = JSON.parse(patchCall?.init?.body as string) as { status: number };
-      expect(body.status).toBe(1); // toggled from 0 to 1
+      expect(updateListItemMock.mock.calls.length).toBe(1);
+      expect(updateListItemMock.mock.calls[0]).toEqual([
+        LIST_ID,
+        "item-1",
+        new UpdateListItemInput(undefined, ItemStatus.Completed),
+      ]);
+    });
+
+    // UI reflects the updated item without a reload
+    await waitFor(() => {
+      const checkboxesAfter = screen.getAllByRole("checkbox") as HTMLInputElement[];
+      expect(checkboxesAfter[0].checked).toBe(true);
     });
   });
 
@@ -124,18 +131,9 @@ describe("ListDetailPage", () => {
     expect(heading.getAttribute("contenteditable")).toBe("plaintext-only");
   });
 
-  test("blurring the title with a new name sends a PATCH request", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (init?.method === "PATCH" && !url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify({ ...mockList, name: "Updated" }), { status: 200 }));
-      }
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("blurring the title with a new name calls updateList", async () => {
+    const updateListMock = mock(() => Promise.resolve(mockList));
+    mockStore = makeMockStore({ updateList: updateListMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
@@ -146,46 +144,31 @@ describe("ListDetailPage", () => {
     fireEvent.blur(heading);
 
     await waitFor(() => {
-      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
-      expect(patchCall).toBeDefined();
-      const body = JSON.parse(patchCall?.init?.body as string) as { name: string };
-      expect(body.name).toBe("Updated");
+      expect(updateListMock.mock.calls.length).toBe(1);
+      expect(updateListMock.mock.calls[0]).toEqual([LIST_ID, new UpdateListInput("Updated")]);
     });
   });
 
-  test("blurring the title with the same name skips the PATCH request", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("blurring the title with the same name skips updateList", async () => {
+    const updateListMock = mock(() => Promise.resolve(mockList));
+    mockStore = makeMockStore({ updateList: updateListMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
 
     const heading = screen.getByRole("heading") as HTMLElement;
     fireEvent.focus(heading);
-    // textContent already equals "Groceries" - no change
+    // textContent already equals "Groceries" — no change
     fireEvent.blur(heading);
 
     await waitFor(() => {
-      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
-      expect(patchCall).toBeUndefined();
+      expect(updateListMock.mock.calls.length).toBe(0);
     });
   });
 
-  test("pressing Escape reverts the title and skips the PATCH request", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("pressing Escape reverts the title and skips updateList", async () => {
+    const updateListMock = mock(() => Promise.resolve(mockList));
+    mockStore = makeMockStore({ updateList: updateListMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByRole("heading")).toBeDefined());
@@ -196,11 +179,7 @@ describe("ListDetailPage", () => {
     fireEvent.keyDown(heading, { key: "Escape" });
 
     expect(heading.textContent).toBe("Groceries");
-
-    await waitFor(() => {
-      const patchCall = fetchCalls.find((call) => call.init?.method === "PATCH" && !call.url.includes("/items"));
-      expect(patchCall).toBeUndefined();
-    });
+    expect(updateListMock.mock.calls.length).toBe(0);
   });
 
   test("add item input is visible when list is loaded", async () => {
@@ -210,23 +189,10 @@ describe("ListDetailPage", () => {
     expect(input).toBeDefined();
   });
 
-  test("pressing Enter with text calls POST and clears input", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (init?.method === "POST" && url.includes("/items")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({ id: "new-item", listId: LIST_ID, text: "Butter", status: 0, position: 2, createdAt: now, updatedAt: now }),
-            { status: 201 },
-          ),
-        );
-      }
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("pressing Enter with text calls createListItem and appends item to UI", async () => {
+    const newItem = new ListItem("new-item", LIST_ID, "Butter", ItemStatus.Default, 3, now, now);
+    const createListItemMock = mock(() => Promise.resolve(newItem));
+    mockStore = makeMockStore({ createListItem: createListItemMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
@@ -236,26 +202,20 @@ describe("ListDetailPage", () => {
     fireEvent.keyDown(input, { key: "Enter" });
 
     await waitFor(() => {
-      const postCall = fetchCalls.find((call) => call.init?.method === "POST" && call.url.includes("/items"));
-      expect(postCall).toBeDefined();
-      const body = JSON.parse(postCall?.init?.body as string) as { text: string };
-      expect(body.text).toBe("Butter");
+      expect(createListItemMock.mock.calls.length).toBe(1);
+      expect(createListItemMock.mock.calls[0]).toEqual([
+        LIST_ID,
+        new CreateListItemInput(LIST_ID, "Butter", mockItems.length + 1),
+      ]);
     });
 
-    await waitFor(() => {
-      expect(input.value).toBe("");
-    });
+    await waitFor(() => expect(screen.getByText("Butter")).toBeDefined());
+    await waitFor(() => expect(input.value).toBe(""));
   });
 
-  test("pressing Enter with empty input does not call POST", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("pressing Enter with empty input does not call createListItem", async () => {
+    const createListItemMock = mock(() => Promise.resolve(mockItems[0]));
+    mockStore = makeMockStore({ createListItem: createListItemMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByPlaceholderText("Add item...")).toBeDefined());
@@ -264,8 +224,7 @@ describe("ListDetailPage", () => {
     fireEvent.keyDown(input, { key: "Enter" });
 
     await waitFor(() => {
-      const postCall = fetchCalls.find((call) => call.init?.method === "POST" && call.url.includes("/items"));
-      expect(postCall).toBeUndefined();
+      expect(createListItemMock.mock.calls.length).toBe(0);
     });
   });
 
@@ -281,18 +240,9 @@ describe("ListDetailPage", () => {
     expect(input.value).toBe("");
   });
 
-  test("calls DELETE and reloads on delete button click", async () => {
-    const fetchCalls: { url: string; init?: RequestInit }[] = [];
-    globalThis.fetch = mock((url: string, init?: RequestInit) => {
-      fetchCalls.push({ url, init });
-      if (init?.method === "DELETE") {
-        return Promise.resolve(new Response(null, { status: 204 }));
-      }
-      if (url.includes("/items")) {
-        return Promise.resolve(new Response(JSON.stringify(mockItems), { status: 200 }));
-      }
-      return Promise.resolve(new Response(JSON.stringify(mockList), { status: 200 }));
-    });
+  test("calls deleteListItem and removes item from UI", async () => {
+    const deleteListItemMock = mock(() => Promise.resolve());
+    mockStore = makeMockStore({ deleteListItem: deleteListItemMock });
 
     renderDetailPage();
     await waitFor(() => expect(screen.getByText("Milk")).toBeDefined());
@@ -301,9 +251,10 @@ describe("ListDetailPage", () => {
     fireEvent.click(deleteButtons[0]);
 
     await waitFor(() => {
-      const deleteCall = fetchCalls.find((call) => call.init?.method === "DELETE");
-      expect(deleteCall).toBeDefined();
-      expect(deleteCall?.url).toContain(`/lists/${LIST_ID}/items/item-1`);
+      expect(deleteListItemMock.mock.calls.length).toBe(1);
+      expect(deleteListItemMock.mock.calls[0]).toEqual([LIST_ID, "item-1"]);
     });
+
+    await waitFor(() => expect(screen.queryByText("Milk")).toBeNull());
   });
 });

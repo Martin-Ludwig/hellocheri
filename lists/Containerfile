@@ -1,0 +1,37 @@
+FROM docker.io/oven/bun:latest AS base
+
+WORKDIR /app
+
+FROM base AS build
+
+RUN mkdir -p framework
+RUN mkdir -p lists/packages/shared
+RUN mkdir -p lists/packages/frontend
+
+COPY lists/bun.lock lists/
+COPY lists/package.json lists/
+
+COPY lists/packages/frontend/build.ts lists/packages/frontend/
+COPY lists/packages/frontend/package.json lists/packages/frontend/
+COPY lists/packages/shared/package.json lists/packages/shared/
+COPY framework/package.json framework/
+
+COPY lists/packages/frontend/tsconfig.json lists/packages/frontend/
+COPY lists/packages/frontend/bunfig.toml lists/packages/frontend/
+
+COPY lists/packages/frontend/src lists/packages/frontend/src
+COPY lists/packages/shared/src lists/packages/shared/src
+COPY framework/ framework/
+
+WORKDIR /app/lists
+RUN bun install
+
+ENV NODE_ENV=production
+WORKDIR /app/lists/packages/frontend
+RUN bun run build.ts
+
+FROM docker.io/nginx:alpine
+
+COPY --from=build /app/lists/packages/frontend/dist /usr/share/nginx/html
+
+EXPOSE 80

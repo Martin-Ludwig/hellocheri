@@ -4,5 +4,9 @@
   "workspaces": [
     "packages/*",
     "../framework"
-  ]
+  ],
+  "scripts": {
+    "build:fe": "bun install --filter 'packages/frontend'"
+  }
+
 }

@@ -2,3 +2,4 @@ node_modules
 .claude/
 .vscode/
 *.db
+deploy.md

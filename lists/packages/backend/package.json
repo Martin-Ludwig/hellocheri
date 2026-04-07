@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "build": "bun build src/index.ts --outdir dist",
-    "test": "bun test"
+    "test": "bun test",
+    "container:build": "--ignorefile .containerignore"
   },
   "dependencies": {
     "@lists/shared": "workspace:*",

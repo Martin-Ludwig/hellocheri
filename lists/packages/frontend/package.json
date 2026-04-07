@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --hot src/index.html",
-    "build": "bun build src/index.tsx --outdir dist",
+    "build": "bun run build.ts",
     "test": "bun test"
   },
   "dependencies": {
@@ -12,7 +12,8 @@
     "bun-plugin-tailwind": "0.1.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-router": "7.13.1"
+    "react-router": "7.13.1",
+    "tailwindcss": "4.2.2"
   },
   "module": "index.ts",
   "type": "module",

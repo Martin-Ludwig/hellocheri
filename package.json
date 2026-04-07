@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "lists:fe:build": "podman build -f lists/Containerfile ."
+  },
   "dependencies": {},
   "devDependencies": {
     "@schpet/linear-cli": "^1.11.1"
